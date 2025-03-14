@@ -21,7 +21,7 @@
               class="h-8 w-8 mr-2 text-blue-500 header-element header-logo"
             />
             <h1 class="text-3xl font-bold header-element header-title">
-              Nuxt Weather
+              Weatheroo
             </h1>
           </div>
 
@@ -88,6 +88,9 @@
                     {{ currentWeather.name }}, {{ currentWeather.sys?.country }}
                   </h2>
                   <p class="text-lg opacity-90">{{ formattedDate }}</p>
+                  <p class="text-md opacity-80">
+                    {{ formattedTimeAndTimezone }}
+                  </p>
                 </div>
 
                 <div class="flex items-center mt-4 md:mt-0">
@@ -254,6 +257,7 @@ import {
   DropletIcon,
   WindIcon,
   AlertTriangleIcon,
+  ClockIcon,
 } from "lucide-vue-next";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -281,6 +285,44 @@ const formattedDate = computed(() => {
     month: "long",
     day: "numeric",
   });
+});
+
+// Format the current time and timezone
+const formattedTimeAndTimezone = computed(() => {
+  if (!currentWeather.value || !currentWeather.value.timezone) {
+    return "Local time unavailable";
+  }
+
+  // OpenWeatherMap returns timezone offset in seconds from UTC
+  const timezoneOffsetSeconds = currentWeather.value.timezone;
+
+  // Get current UTC time
+  const now = new Date();
+  const utcTime = now.getTime() + now.getTimezoneOffset() * 60000;
+
+  // Calculate city's local time by applying the timezone offset
+  const cityLocalTime = new Date(utcTime + timezoneOffsetSeconds * 1000);
+
+  // Format time
+  const timeString = cityLocalTime.toLocaleTimeString("en-US", {
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: true,
+  });
+
+  // Format timezone name
+  // Convert seconds to hours for cleaner display
+  const timezoneHours = Math.abs(Math.floor(timezoneOffsetSeconds / 3600));
+  const timezoneMinutes = Math.abs(
+    Math.floor((timezoneOffsetSeconds % 3600) / 60)
+  );
+  const timezoneString = `GMT${
+    timezoneOffsetSeconds >= 0 ? "+" : "-"
+  }${timezoneHours.toString().padStart(2, "0")}:${timezoneMinutes
+    .toString()
+    .padStart(2, "0")}`;
+
+  return `${timeString} (${timezoneString})`;
 });
 
 // Extract daily forecasts (one per day)
@@ -348,7 +390,7 @@ const searchCity = async () => {
 // Initialize with a default city on page load
 onMounted(async () => {
   try {
-    const response = await fetch("/api/weather?city=London");
+    const response = await fetch("/api/weather?city=Thessaloniki");
     const data = await response.json();
 
     if (data.error) {

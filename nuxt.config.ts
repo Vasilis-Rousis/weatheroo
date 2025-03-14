@@ -46,7 +46,7 @@ export default defineNuxtConfig({
   // Set app configuration
   app: {
     head: {
-      title: "Nuxt Weather App",
+      title: "Weatheroo",
       meta: [
         {
           name: "description",
