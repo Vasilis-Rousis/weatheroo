@@ -88,7 +88,7 @@
                     {{ currentWeather.name }}, {{ currentWeather.sys?.country }}
                   </h2>
                   <p class="text-lg opacity-90">{{ formattedDate }}</p>
-                  <p class="text-md opacity-80">
+                  <p v-if="isTimeAvailable" class="text-md opacity-80">
                     {{ formattedTimeAndTimezone }}
                   </p>
                 </div>
@@ -257,7 +257,6 @@ import {
   DropletIcon,
   WindIcon,
   AlertTriangleIcon,
-  ClockIcon,
 } from "lucide-vue-next";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -287,10 +286,15 @@ const formattedDate = computed(() => {
   });
 });
 
+// Check if time data is available
+const isTimeAvailable = computed(() => {
+  return currentWeather.value && currentWeather.value.timezone !== undefined;
+});
+
 // Format the current time and timezone
 const formattedTimeAndTimezone = computed(() => {
-  if (!currentWeather.value || !currentWeather.value.timezone) {
-    return "Local time unavailable";
+  if (!isTimeAvailable.value) {
+    return "";
   }
 
   // OpenWeatherMap returns timezone offset in seconds from UTC
@@ -390,7 +394,7 @@ const searchCity = async () => {
 // Initialize with a default city on page load
 onMounted(async () => {
   try {
-    const response = await fetch("/api/weather?city=Thessaloniki");
+    const response = await fetch("/api/weather?city=London");
     const data = await response.json();
 
     if (data.error) {
