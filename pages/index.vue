@@ -17,11 +17,15 @@
           class="flex flex-col md:flex-row md:items-center md:justify-between gap-4"
         >
           <div class="flex items-center">
-            <CloudIcon class="h-8 w-8 mr-2 text-blue-500" />
-            <h1 class="text-3xl font-bold">Nuxt Weather</h1>
+            <CloudIcon
+              class="h-8 w-8 mr-2 text-blue-500 header-element header-logo"
+            />
+            <h1 class="text-3xl font-bold header-element header-title">
+              Nuxt Weather
+            </h1>
           </div>
 
-          <div class="w-full md:w-64">
+          <div class="w-full md:w-64 header-element header-search">
             <div class="relative">
               <Input
                 v-model="searchQuery"
@@ -39,7 +43,12 @@
             </div>
           </div>
 
-          <Button variant="outline" size="icon" @click="toggleTheme">
+          <Button
+            variant="outline"
+            size="icon"
+            class="header-element header-theme-toggle"
+            @click="toggleTheme"
+          >
             <SunIcon v-if="isDark" class="h-5 w-5" />
             <MoonIcon v-else class="h-5 w-5" />
           </Button>
@@ -163,19 +172,19 @@
           <h2 class="text-2xl font-bold mb-4">5-Day Forecast</h2>
           <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
             <Card
-              v-for="(forecast, index) in dailyForecasts"
+              v-for="(forecastDay, index) in dailyForecasts"
               :key="index"
               class="border-none shadow-md forecast-card transition-all duration-300 transform hover:shadow-lg hover:scale-105"
             >
               <CardHeader class="pb-2">
                 <CardTitle class="text-lg">{{
-                  formatDay(forecast.dt)
+                  formatDay(forecastDay.dt)
                 }}</CardTitle>
               </CardHeader>
               <CardContent class="text-center py-2">
                 <NuxtImg
-                  :src="`https://openweathermap.org/img/wn/${forecast.weather[0].icon}@2x.png`"
-                  :alt="forecast.weather[0].description"
+                  :src="`https://openweathermap.org/img/wn/${forecastDay.weather[0].icon}@2x.png`"
+                  :alt="forecastDay.weather[0].description"
                   width="64"
                   height="64"
                   class="mx-auto"
@@ -183,10 +192,10 @@
                   format="webp"
                 />
                 <p class="text-2xl font-bold mb-1">
-                  {{ Math.round(forecast.main.temp) }}°C
+                  {{ Math.round(forecastDay.main.temp) }}°C
                 </p>
                 <p class="text-sm capitalize text-gray-500 dark:text-gray-400">
-                  {{ forecast.weather[0].description }}
+                  {{ forecastDay.weather[0].description }}
                 </p>
               </CardContent>
               <CardFooter class="pt-0 pb-4">
@@ -195,11 +204,11 @@
                 >
                   <div class="flex items-center">
                     <DropletIcon class="h-3 w-3 mr-1" />
-                    {{ forecast.main.humidity }}%
+                    {{ forecastDay.main.humidity }}%
                   </div>
                   <div class="flex items-center">
                     <WindIcon class="h-3 w-3 mr-1" />
-                    {{ Math.round(forecast.wind.speed) }} m/s
+                    {{ Math.round(forecastDay.wind.speed) }} m/s
                   </div>
                 </div>
               </CardFooter>
@@ -235,7 +244,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, defineAsyncComponent } from "vue";
+import { ref, computed, onMounted } from "vue";
 import {
   CloudIcon,
   SearchIcon,
@@ -394,5 +403,40 @@ onMounted(async () => {
 
 .animate-fadeIn {
   animation: fadeIn 0.5s ease-out;
+}
+
+/* Header animation styles */
+.header-element {
+  opacity: 0;
+  transform: translateY(-15px);
+  animation: fadeInTopDown 0.6s ease-out forwards;
+}
+
+/* For mobile (vertical layout) - top to bottom sequence */
+.header-logo {
+  animation-delay: 0ms;
+}
+
+.header-title {
+  animation-delay: 100ms;
+}
+
+.header-search {
+  animation-delay: 200ms;
+}
+
+.header-theme-toggle {
+  animation-delay: 300ms;
+}
+
+@keyframes fadeInTopDown {
+  from {
+    opacity: 0;
+    transform: translateY(-15px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 </style>
