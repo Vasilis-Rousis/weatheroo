@@ -32,9 +32,9 @@
             </h1>
           </div>
 
-          <div class="w-full md:w-64 relative header-element header-search">
+          <div class="w-full md:w-96 mr-20 relative header-element header-search">
             <div class="flex gap-2 items-center">
-              <div class="relative flex-1">
+              <div class="relative md:max-w-60 flex-1">
                 <Input
                   v-model="searchQuery"
                   placeholder="Search city..."
@@ -214,7 +214,7 @@
                 <WeatherIcons
                   :weather-code="forecastDay.weather[0].icon"
                   size="medium"
-                  class="mx-auto"
+                  class="mx-auto my-8"
                 />
                 <p class="text-2xl font-bold mb-1">
                   {{ Math.round(forecastDay.main.temp) }}°C
