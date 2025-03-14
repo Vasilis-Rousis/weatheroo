@@ -11,6 +11,12 @@
     </div>
 
     <div class="container mx-auto px-4 py-8">
+      <!-- Location Permission Dialog -->
+      <LocationDialog
+        v-model="showLocationDialog"
+        @confirm="handleLocationRequest"
+      />
+
       <!-- Header with Logo and Search -->
       <header class="mb-8">
         <div
@@ -25,21 +31,39 @@
             </h1>
           </div>
 
-          <div class="w-full md:w-64 header-element header-search">
-            <div class="relative">
-              <Input
-                v-model="searchQuery"
-                placeholder="Search city..."
-                class="pr-10"
-                @keyup.enter="searchCity"
+          <div class="w-full md:w-64 relative header-element header-search">
+            <div class="flex gap-2 items-center">
+              <div class="relative flex-1">
+                <Input
+                  v-model="searchQuery"
+                  placeholder="Search city..."
+                  class="pr-10"
+                  @keyup.enter="searchCity"
+                />
+                <Button
+                  variant="ghost"
+                  class="absolute right-0 top-0 h-full px-3"
+                  @click="searchCity"
+                >
+                  <SearchIcon class="h-5 w-5" />
+                </Button>
+              </div>
+
+              <!-- Location Button Component -->
+              <LocationButton
+                :is-enabled="locationEnabled"
+                :is-loading="locationLoading"
+                class="header-element location-button"
+                @request-location="handleLocationRequest"
               />
-              <Button
-                variant="ghost"
-                class="absolute right-0 top-0 h-full px-3"
-                @click="searchCity"
-              >
-                <SearchIcon class="h-5 w-5" />
-              </Button>
+            </div>
+
+            <!-- Location error message -->
+            <div
+              v-if="locationError"
+              class="absolute mt-1 text-xs text-red-500 animate-fadeIn"
+            >
+              {{ locationError }}
             </div>
           </div>
 
@@ -84,8 +108,12 @@
                 class="flex flex-col md:flex-row justify-between items-center"
               >
                 <div>
-                  <h2 class="text-3xl font-bold mb-1">
+                  <h2 class="text-3xl font-bold mb-1 flex items-center gap-2">
                     {{ currentWeather.name }}, {{ currentWeather.sys?.country }}
+                    <MapPinIcon
+                      v-if="locationEnabled"
+                      class="h-5 w-5 inline-block"
+                    />
                   </h2>
                   <p class="text-lg opacity-90">{{ formattedDate }}</p>
                   <p v-if="cityLocalTime" class="text-md opacity-80">
@@ -181,7 +209,6 @@
                 }}</CardTitle>
               </CardHeader>
               <CardContent class="text-center py-2">
-                <!-- Replace NuxtImg with WeatherIcons in forecast cards -->
                 <WeatherIcons
                   :weather-code="forecastDay.weather[0].icon"
                   size="medium"
@@ -246,6 +273,7 @@ import {
   SearchIcon,
   SunIcon,
   MoonIcon,
+  MapPinIcon,
   ThermometerIcon,
   DropletIcon,
   WindIcon,
@@ -262,6 +290,10 @@ import {
 } from "@/components/ui/card";
 import WeatherAnimation from "~/components/WeatherAnimation.vue";
 import WeatherIcons from "~/components/WeatherIcons.vue";
+import LocationButton from "~/components/LocationButton.vue";
+import LocationDialog from "~/components/LocationDialog.vue";
+import { useLocationService } from "~/composables/useLocationService";
+import { useWeatherService } from "~/composables/useWeatherService";
 
 const searchQuery = ref("");
 const currentWeather = ref({});
@@ -269,6 +301,18 @@ const forecast = ref({});
 const loading = ref(true);
 const error = ref(null);
 const isDark = ref(false);
+const showLocationDialog = ref(false);
+
+// Get location and weather services
+const {
+  locationEnabled,
+  locationLoading,
+  locationError,
+  coordinates,
+  requestLocation,
+} = useLocationService();
+
+const { getWeatherByCity, getWeatherByCoords } = useWeatherService();
 
 // Clock and timezone variables
 const cityLocalTime = ref(null);
@@ -378,20 +422,20 @@ const searchCity = async () => {
   error.value = null;
 
   try {
-    const response = await fetch(
-      `/api/weather?city=${encodeURIComponent(searchQuery.value)}`
-    );
-    const data = await response.json();
+    const result = await getWeatherByCity(searchQuery.value);
 
-    if (data.error) {
-      error.value = "City not found. Please try another location.";
+    if (result.error) {
+      error.value = result.error;
     } else {
-      currentWeather.value = data.current;
-      forecast.value = data.forecast;
+      currentWeather.value = result.current;
+      forecast.value = result.forecast;
+
+      // Update location state
+      locationEnabled.value = false;
 
       // Update the timezone offset and restart the clock
-      if (data.current && data.current.timezone !== undefined) {
-        timezoneOffsetSeconds.value = data.current.timezone;
+      if (result.current && result.current.timezone !== undefined) {
+        timezoneOffsetSeconds.value = result.current.timezone;
         updateTimezoneString();
         startClock();
       }
@@ -403,6 +447,68 @@ const searchCity = async () => {
     loading.value = false;
   }
 };
+
+// Handle location request
+const handleLocationRequest = async () => {
+  try {
+    const position = await requestLocation();
+
+    if (position) {
+      loading.value = true;
+      const result = await getWeatherByCoords(
+        position.latitude,
+        position.longitude
+      );
+
+      if (result.error) {
+        error.value = result.error;
+      } else {
+        currentWeather.value = result.current;
+        forecast.value = result.forecast;
+        searchQuery.value = result.current.name;
+
+        // Update the timezone offset and restart the clock
+        if (result.current && result.current.timezone !== undefined) {
+          timezoneOffsetSeconds.value = result.current.timezone;
+          updateTimezoneString();
+          startClock();
+        }
+      }
+
+      loading.value = false;
+    }
+  } catch (err) {
+    console.error("Error getting location:", err);
+  }
+};
+
+// Watch for changes in the coordinates to update weather
+watch(coordinates, async (newCoords) => {
+  if (newCoords) {
+    loading.value = true;
+    const result = await getWeatherByCoords(
+      newCoords.latitude,
+      newCoords.longitude
+    );
+
+    if (result.error) {
+      error.value = result.error;
+    } else {
+      currentWeather.value = result.current;
+      forecast.value = result.forecast;
+      searchQuery.value = result.current.name;
+
+      // Update the timezone offset and restart the clock
+      if (result.current && result.current.timezone !== undefined) {
+        timezoneOffsetSeconds.value = result.current.timezone;
+        updateTimezoneString();
+        startClock();
+      }
+    }
+
+    loading.value = false;
+  }
+});
 
 // Watch for changes in the currentWeather timezone
 watch(
@@ -416,24 +522,58 @@ watch(
   }
 );
 
-// Initialize with a default city on page load
+// Initialize app on page load
 onMounted(async () => {
   try {
-    const response = await fetch("/api/weather?city=London");
-    const data = await response.json();
+    // Check if geolocation is available in the browser
+    if ("geolocation" in navigator) {
+      // Show the location permission dialog after a short delay
+      setTimeout(() => {
+        if (!locationEnabled.value && !coordinates.value) {
+          showLocationDialog.value = true;
+        }
+      }, 1500);
+    }
 
-    if (data.error) {
-      error.value = "Failed to load weather data";
-    } else {
-      currentWeather.value = data.current;
-      forecast.value = data.forecast;
+    // If geolocation is already enabled, use it to get weather
+    if (coordinates.value) {
+      const result = await getWeatherByCoords(
+        coordinates.value.latitude,
+        coordinates.value.longitude
+      );
 
-      // Initialize the timezone offset and start the clock
-      if (data.current && data.current.timezone !== undefined) {
-        timezoneOffsetSeconds.value = data.current.timezone;
-        updateTimezoneString();
-        startClock();
+      if (result.error) {
+        // Fall back to default city if there's an error with coordinates
+        const defaultResult = await getWeatherByCity("London");
+
+        if (!defaultResult.error) {
+          currentWeather.value = defaultResult.current;
+          forecast.value = defaultResult.forecast;
+        } else {
+          error.value = "Failed to load weather data";
+        }
+      } else {
+        currentWeather.value = result.current;
+        forecast.value = result.forecast;
+        searchQuery.value = result.current.name;
       }
+    } else {
+      // Start with default city, then we'll ask for permission
+      const result = await getWeatherByCity("London");
+
+      if (!result.error) {
+        currentWeather.value = result.current;
+        forecast.value = result.forecast;
+      } else {
+        error.value = "Failed to load weather data";
+      }
+    }
+
+    // Initialize timezone info if we have current weather data
+    if (currentWeather.value && currentWeather.value.timezone !== undefined) {
+      timezoneOffsetSeconds.value = currentWeather.value.timezone;
+      updateTimezoneString();
+      startClock();
     }
   } catch (err) {
     error.value = "Failed to fetch weather data";
@@ -508,6 +648,10 @@ onUnmounted(() => {
 
 .header-search {
   animation-delay: 200ms;
+}
+
+.location-button {
+  animation-delay: 250ms;
 }
 
 .header-theme-toggle {

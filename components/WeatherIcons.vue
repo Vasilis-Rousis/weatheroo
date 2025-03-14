@@ -77,7 +77,6 @@ v-for="i in 3" :key="`mist-${i}`" class="mist-line"
 const props = defineProps({
   weatherCode: {
     type: String,
-    required: true,
     default: '01d'
   },
   size: {
