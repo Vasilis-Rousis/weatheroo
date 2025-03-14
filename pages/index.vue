@@ -61,8 +61,9 @@
 
             <!-- Location error message -->
             <div
-              v-if="locationError"
-              class="absolute mt-1 text-xs text-red-500 animate-fadeIn"
+              v-if="locationError && showLocationError"
+              class="absolute mt-1 text-xs text-red-500 transition-opacity duration-300"
+              :class="showLocationError ? 'animate-fadeIn' : 'animate-fadeOut'"
             >
               {{ locationError }}
             </div>
@@ -303,15 +304,15 @@ const forecast = ref({});
 const loading = ref(true);
 const error = ref(null);
 const showLocationDialog = ref(false);
+const showLocationError = ref(false);
 
 // Get user preferences
-const { 
-  lastCity, 
-  locationPromptShown, 
-  locationPermissionDenied, 
+const {
+  lastCity,
+  locationPromptShown,
+  locationPermissionDenied,
   darkMode,
-  updateLastCity, 
-  markLocationPromptAsShown 
+  updateLastCity,
 } = useUserPreferences();
 
 // Set isDark from stored preference
@@ -426,7 +427,7 @@ const formatDay = (timestamp) => {
 const toggleTheme = () => {
   isDark.value = !isDark.value;
   document.documentElement.classList.toggle("dark", isDark.value);
-  
+
   // Save the theme preference
   darkMode.value = isDark.value;
 };
@@ -456,7 +457,7 @@ const searchCity = async () => {
         updateTimezoneString();
         startClock();
       }
-      
+
       // Save the city in user preferences
       updateLastCity(searchQuery.value);
     }
@@ -493,7 +494,7 @@ const handleLocationRequest = async () => {
           updateTimezoneString();
           startClock();
         }
-        
+
         // Save the city in user preferences
         updateLastCity(result.current.name);
       }
@@ -536,7 +537,7 @@ watch(coordinates, async (newCoords) => {
         updateTimezoneString();
         startClock();
       }
-      
+
       // Save the city in user preferences
       updateLastCity(result.current.name);
     }
@@ -557,37 +558,54 @@ watch(
   }
 );
 
+// Watch for changes in the locationError value
+watch(
+  locationError,
+  (newValue) => {
+    if (newValue) {
+      // Show the error message
+      showLocationError.value = true;
+
+      // Set a timer to hide the message after 2 seconds
+      setTimeout(() => {
+        showLocationError.value = false;
+      }, 2000);
+    }
+  },
+  { immediate: true }
+);
+
 // Initialize app on page load
 onMounted(async () => {
-  // Apply stored theme preference 
+  // Apply stored theme preference
   if (isDark.value) {
     document.documentElement.classList.add("dark");
   }
-  
+
   try {
     loading.value = true;
-    
+
     // First, check if we have a saved city to load
     if (lastCity.value) {
       searchQuery.value = lastCity.value;
       const result = await getWeatherByCity(lastCity.value);
-      
+
       if (!result.error) {
         currentWeather.value = result.current;
         forecast.value = result.forecast;
-        
+
         // Initialize timezone info
         if (result.current && result.current.timezone !== undefined) {
           timezoneOffsetSeconds.value = result.current.timezone;
           updateTimezoneString();
           startClock();
         }
-        
+
         loading.value = false;
         return; // Exit early if we successfully loaded the last city
       }
     }
-    
+
     // If we don't have a saved city or it failed to load, try geolocation if available
     if ("geolocation" in navigator && !locationPermissionDenied.value) {
       // Check if the location prompt has been shown before
@@ -596,7 +614,7 @@ onMounted(async () => {
         setTimeout(() => {
           showLocationDialog.value = true;
         }, 1500);
-      } 
+      }
       // If prompt was shown and location is enabled, use it
       else if (coordinates.value) {
         const result = await getWeatherByCoords(
@@ -609,28 +627,28 @@ onMounted(async () => {
           forecast.value = result.forecast;
           searchQuery.value = result.current.name;
           updateLastCity(result.current.name);
-          
+
           if (result.current && result.current.timezone !== undefined) {
             timezoneOffsetSeconds.value = result.current.timezone;
             updateTimezoneString();
             startClock();
           }
-          
+
           loading.value = false;
           return; // Exit early if geolocation worked
         }
       }
     }
-    
+
     // Fall back to London as the default city if everything else fails
     const result = await getWeatherByCity("London");
-    
+
     if (!result.error) {
       currentWeather.value = result.current;
       forecast.value = result.forecast;
       searchQuery.value = "London";
       updateLastCity("London");
-      
+
       if (result.current && result.current.timezone !== undefined) {
         timezoneOffsetSeconds.value = result.current.timezone;
         updateTimezoneString();

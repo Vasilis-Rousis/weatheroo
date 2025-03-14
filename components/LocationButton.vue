@@ -1,6 +1,6 @@
 <!-- components/LocationButton.vue -->
 <script setup>
-import { defineEmits } from "vue";
+import { defineEmits, ref, watch } from "vue";
 import { MapPinIcon, MapPinOffIcon } from "lucide-vue-next";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -21,6 +21,24 @@ const props = defineProps({
 });
 
 const emit = defineEmits(["request-location"]);
+const showEnabledMessage = ref(false);
+
+// Watch for changes in isEnabled to control message visibility
+watch(
+  () => props.isEnabled,
+  (newValue) => {
+    if (newValue) {
+      // Show the message
+      showEnabledMessage.value = true;
+
+      // Set a timer to hide the message after 2 seconds
+      setTimeout(() => {
+        showEnabledMessage.value = false;
+      }, 2000);
+    }
+  },
+  { immediate: true }
+);
 
 const requestLocation = () => {
   emit("request-location");
@@ -52,8 +70,9 @@ const requestLocation = () => {
     </Button>
 
     <span
-      v-if="isEnabled"
-      class="ml-2 text-xs text-green-600 dark:text-green-400 animate-fadeIn"
+      v-if="isEnabled && showEnabledMessage"
+      class="ml-2 text-xs text-green-600 dark:text-green-400 transition-opacity duration-300"
+      :class="showEnabledMessage ? 'animate-fadeIn' : 'animate-fadeOut'"
     >
       Location enabled
     </span>
