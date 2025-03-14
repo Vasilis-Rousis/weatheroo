@@ -66,8 +66,7 @@
         <div v-else>
           <!-- Current Weather Card -->
           <Card
-            v-motion="{ opacity: 1, y: 0, initial: { opacity: 0, y: 20 } }"
-            class="mb-8 overflow-hidden border-none shadow-lg"
+            class="mb-8 overflow-hidden border-none shadow-lg transform transition-all duration-300 hover:shadow-xl"
           >
             <div
               class="bg-gradient-to-r from-blue-400 to-blue-600 dark:from-blue-600 dark:to-blue-800 p-6 text-white relative"
@@ -104,12 +103,7 @@
             <CardContent class="p-6">
               <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <div
-                  v-motion="{
-                    opacity: 1,
-                    initial: { opacity: 0 },
-                    transition: { delay: 200 },
-                  }"
-                  class="text-center p-3 rounded-lg bg-gray-50 dark:bg-gray-800"
+                  class="text-center p-3 rounded-lg bg-gray-50 dark:bg-gray-800 transform transition duration-300 hover:scale-105"
                 >
                   <ThermometerIcon
                     class="h-6 w-6 mx-auto mb-2 text-yellow-500"
@@ -123,12 +117,7 @@
                 </div>
 
                 <div
-                  v-motion="{
-                    opacity: 1,
-                    initial: { opacity: 0 },
-                    transition: { delay: 300 },
-                  }"
-                  class="text-center p-3 rounded-lg bg-gray-50 dark:bg-gray-800"
+                  class="text-center p-3 rounded-lg bg-gray-50 dark:bg-gray-800 transform transition duration-300 hover:scale-105"
                 >
                   <DropletIcon class="h-6 w-6 mx-auto mb-2 text-blue-500" />
                   <p class="text-sm text-gray-500 dark:text-gray-400">
@@ -140,12 +129,7 @@
                 </div>
 
                 <div
-                  v-motion="{
-                    opacity: 1,
-                    initial: { opacity: 0 },
-                    transition: { delay: 400 },
-                  }"
-                  class="text-center p-3 rounded-lg bg-gray-50 dark:bg-gray-800"
+                  class="text-center p-3 rounded-lg bg-gray-50 dark:bg-gray-800 transform transition duration-300 hover:scale-105"
                 >
                   <WindIcon class="h-6 w-6 mx-auto mb-2 text-gray-500" />
                   <p class="text-sm text-gray-500 dark:text-gray-400">
@@ -157,12 +141,7 @@
                 </div>
 
                 <div
-                  v-motion="{
-                    opacity: 1,
-                    initial: { opacity: 0 },
-                    transition: { delay: 500 },
-                  }"
-                  class="text-center p-3 rounded-lg bg-gray-50 dark:bg-gray-800"
+                  class="text-center p-3 rounded-lg bg-gray-50 dark:bg-gray-800 transform transition duration-300 hover:scale-105"
                 >
                   <CloudIcon class="h-6 w-6 mx-auto mb-2 text-gray-400" />
                   <p class="text-sm text-gray-500 dark:text-gray-400">
@@ -182,13 +161,7 @@
             <Card
               v-for="(forecast, index) in dailyForecasts"
               :key="index"
-              v-motion="{
-                opacity: 1,
-                y: 0,
-                initial: { opacity: 0, y: 20 },
-                transition: { delay: 200 + index * 100 },
-              }"
-              class="border-none shadow-md forecast-card"
+              class="border-none shadow-md forecast-card transition-all duration-300 transform hover:shadow-lg hover:scale-105"
             >
               <CardHeader class="pb-2">
                 <CardTitle class="text-lg">{{
@@ -227,8 +200,8 @@
 
           <!-- Weather Map Section -->
           <div
-            v-motion="{ opacity: 1, y: 0, initial: { opacity: 0, y: 20 } }"
-            class="mt-8"
+            class="mt-8 opacity-0 animate-fadeIn"
+            style="animation-delay: 300ms; animation-fill-mode: forwards"
           >
             <h2 class="text-2xl font-bold mb-4">Weather Map</h2>
             <Card class="border-none shadow-md overflow-hidden h-64">
@@ -255,7 +228,6 @@
 
 <script setup>
 import { ref, computed, onMounted } from "vue";
-import { useMotion } from "@vueuse/motion";
 import {
   CloudIcon,
   SearchIcon,
@@ -399,5 +371,20 @@ onMounted(async () => {
   50% {
     transform: translateY(-5px);
   }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fadeIn {
+  animation: fadeIn 0.5s ease-out;
 }
 </style>

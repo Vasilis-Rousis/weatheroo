@@ -12,4 +12,26 @@ export default defineNuxtConfig({
     openWeatherApiKey: process.env.OPENWEATHER_API_KEY,
   },
   css: ["~/assets/css/main.css"],
+  // Add experimental features to enhance performance
+  experimental: {
+    payloadExtraction: true,
+    asyncContext: true,
+    viewTransition: true,
+    componentIslands: true,
+  },
+  // Set app configuration
+  app: {
+    head: {
+      title: "Nuxt Weather App",
+      meta: [
+        {
+          name: "description",
+          content: "A beautiful weather app built with Nuxt 3",
+        },
+      ],
+      htmlAttrs: {
+        lang: "en",
+      },
+    },
+  },
 });
