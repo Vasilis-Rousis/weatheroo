@@ -82,11 +82,15 @@
                 </div>
 
                 <div class="flex items-center mt-4 md:mt-0">
-                  <img
+                  <NuxtImg
                     v-if="currentWeather.weather?.[0]?.icon"
                     :src="`https://openweathermap.org/img/wn/${currentWeather.weather[0].icon}@2x.png`"
                     :alt="currentWeather.weather?.[0]?.description"
-                    class="w-20 h-20 weather-icon"
+                    width="80"
+                    height="80"
+                    class="weather-icon"
+                    loading="eager"
+                    format="webp"
                   />
                   <div class="text-center">
                     <h3 class="text-5xl font-bold">
@@ -169,10 +173,14 @@
                 }}</CardTitle>
               </CardHeader>
               <CardContent class="text-center py-2">
-                <img
+                <NuxtImg
                   :src="`https://openweathermap.org/img/wn/${forecast.weather[0].icon}@2x.png`"
                   :alt="forecast.weather[0].description"
-                  class="w-16 h-16 mx-auto"
+                  width="64"
+                  height="64"
+                  class="mx-auto"
+                  loading="lazy"
+                  format="webp"
                 />
                 <p class="text-2xl font-bold mb-1">
                   {{ Math.round(forecast.main.temp) }}°C
@@ -227,7 +235,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from "vue";
+import { ref, computed, onMounted, defineAsyncComponent } from "vue";
 import {
   CloudIcon,
   SearchIcon,
