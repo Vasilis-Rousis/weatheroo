@@ -73,7 +73,7 @@ export function useLocationService() {
 
             switch (error.code) {
               case error.PERMISSION_DENIED:
-                locationError.value = "User denied the request for geolocation";
+                locationError.value = "Request for geolocation was denied";
                 break;
               case error.POSITION_UNAVAILABLE:
                 locationError.value = "Location information is unavailable";

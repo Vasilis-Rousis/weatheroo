@@ -15,6 +15,7 @@
       <LocationDialog
         v-model="showLocationDialog"
         @confirm="handleLocationRequest"
+        @decline="handleLocationDecline"
       />
 
       <!-- Header with Logo and Search -->
@@ -294,14 +295,27 @@ import LocationButton from "~/components/LocationButton.vue";
 import LocationDialog from "~/components/LocationDialog.vue";
 import { useLocationService } from "~/composables/useLocationService";
 import { useWeatherService } from "~/composables/useWeatherService";
+import { useUserPreferences } from "~/composables/useUserPreferences";
 
 const searchQuery = ref("");
 const currentWeather = ref({});
 const forecast = ref({});
 const loading = ref(true);
 const error = ref(null);
-const isDark = ref(false);
 const showLocationDialog = ref(false);
+
+// Get user preferences
+const { 
+  lastCity, 
+  locationPromptShown, 
+  locationPermissionDenied, 
+  darkMode,
+  updateLastCity, 
+  markLocationPromptAsShown 
+} = useUserPreferences();
+
+// Set isDark from stored preference
+const isDark = ref(darkMode.value);
 
 // Get location and weather services
 const {
@@ -412,6 +426,9 @@ const formatDay = (timestamp) => {
 const toggleTheme = () => {
   isDark.value = !isDark.value;
   document.documentElement.classList.toggle("dark", isDark.value);
+  
+  // Save the theme preference
+  darkMode.value = isDark.value;
 };
 
 // Search for a city's weather
@@ -439,6 +456,9 @@ const searchCity = async () => {
         updateTimezoneString();
         startClock();
       }
+      
+      // Save the city in user preferences
+      updateLastCity(searchQuery.value);
     }
   } catch (err) {
     error.value = "Failed to fetch weather data. Please try again.";
@@ -473,12 +493,24 @@ const handleLocationRequest = async () => {
           updateTimezoneString();
           startClock();
         }
+        
+        // Save the city in user preferences
+        updateLastCity(result.current.name);
       }
 
       loading.value = false;
     }
   } catch (err) {
     console.error("Error getting location:", err);
+  }
+};
+
+// Handle when the user declines location permission
+const handleLocationDecline = () => {
+  // If the user previously allowed location but now declined, we should load their last city or default
+  if (lastCity.value) {
+    searchQuery.value = lastCity.value;
+    searchCity();
   }
 };
 
@@ -504,6 +536,9 @@ watch(coordinates, async (newCoords) => {
         updateTimezoneString();
         startClock();
       }
+      
+      // Save the city in user preferences
+      updateLastCity(result.current.name);
     }
 
     loading.value = false;
@@ -524,71 +559,91 @@ watch(
 
 // Initialize app on page load
 onMounted(async () => {
+  // Apply stored theme preference 
+  if (isDark.value) {
+    document.documentElement.classList.add("dark");
+  }
+  
   try {
-    // Check if geolocation is available in the browser
-    if ("geolocation" in navigator) {
-      // Show the location permission dialog after a short delay
-      setTimeout(() => {
-        if (!locationEnabled.value && !coordinates.value) {
-          showLocationDialog.value = true;
-        }
-      }, 1500);
-    }
-
-    // If geolocation is already enabled, use it to get weather
-    if (coordinates.value) {
-      const result = await getWeatherByCoords(
-        coordinates.value.latitude,
-        coordinates.value.longitude
-      );
-
-      if (result.error) {
-        // Fall back to default city if there's an error with coordinates
-        const defaultResult = await getWeatherByCity("London");
-
-        if (!defaultResult.error) {
-          currentWeather.value = defaultResult.current;
-          forecast.value = defaultResult.forecast;
-        } else {
-          error.value = "Failed to load weather data";
-        }
-      } else {
-        currentWeather.value = result.current;
-        forecast.value = result.forecast;
-        searchQuery.value = result.current.name;
-      }
-    } else {
-      // Start with default city, then we'll ask for permission
-      const result = await getWeatherByCity("London");
-
+    loading.value = true;
+    
+    // First, check if we have a saved city to load
+    if (lastCity.value) {
+      searchQuery.value = lastCity.value;
+      const result = await getWeatherByCity(lastCity.value);
+      
       if (!result.error) {
         currentWeather.value = result.current;
         forecast.value = result.forecast;
-      } else {
-        error.value = "Failed to load weather data";
+        
+        // Initialize timezone info
+        if (result.current && result.current.timezone !== undefined) {
+          timezoneOffsetSeconds.value = result.current.timezone;
+          updateTimezoneString();
+          startClock();
+        }
+        
+        loading.value = false;
+        return; // Exit early if we successfully loaded the last city
       }
     }
+    
+    // If we don't have a saved city or it failed to load, try geolocation if available
+    if ("geolocation" in navigator && !locationPermissionDenied.value) {
+      // Check if the location prompt has been shown before
+      if (!locationPromptShown.value) {
+        // Show the location permission dialog after a short delay
+        setTimeout(() => {
+          showLocationDialog.value = true;
+        }, 1500);
+      } 
+      // If prompt was shown and location is enabled, use it
+      else if (coordinates.value) {
+        const result = await getWeatherByCoords(
+          coordinates.value.latitude,
+          coordinates.value.longitude
+        );
 
-    // Initialize timezone info if we have current weather data
-    if (currentWeather.value && currentWeather.value.timezone !== undefined) {
-      timezoneOffsetSeconds.value = currentWeather.value.timezone;
-      updateTimezoneString();
-      startClock();
+        if (!result.error) {
+          currentWeather.value = result.current;
+          forecast.value = result.forecast;
+          searchQuery.value = result.current.name;
+          updateLastCity(result.current.name);
+          
+          if (result.current && result.current.timezone !== undefined) {
+            timezoneOffsetSeconds.value = result.current.timezone;
+            updateTimezoneString();
+            startClock();
+          }
+          
+          loading.value = false;
+          return; // Exit early if geolocation worked
+        }
+      }
+    }
+    
+    // Fall back to London as the default city if everything else fails
+    const result = await getWeatherByCity("London");
+    
+    if (!result.error) {
+      currentWeather.value = result.current;
+      forecast.value = result.forecast;
+      searchQuery.value = "London";
+      updateLastCity("London");
+      
+      if (result.current && result.current.timezone !== undefined) {
+        timezoneOffsetSeconds.value = result.current.timezone;
+        updateTimezoneString();
+        startClock();
+      }
+    } else {
+      error.value = "Failed to load weather data";
     }
   } catch (err) {
     error.value = "Failed to fetch weather data";
     console.error(err);
   } finally {
     loading.value = false;
-  }
-
-  // Check for system dark mode preference
-  if (
-    window.matchMedia &&
-    window.matchMedia("(prefers-color-scheme: dark)").matches
-  ) {
-    isDark.value = true;
-    document.documentElement.classList.add("dark");
   }
 });
 

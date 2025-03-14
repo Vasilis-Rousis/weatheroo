@@ -3,7 +3,7 @@
   <div
     v-if="isOpen"
     class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 animate-fadeIn"
-    @click="closeOnBackdrop ? close() : null"
+    @click="closeOnBackdrop ? handleNotNow() : null"
   >
     <div
       class="bg-white dark:bg-gray-800 rounded-xl shadow-xl max-w-md w-full mx-4 p-6 transform transition-all"
@@ -14,7 +14,7 @@
           <MapPinIcon class="h-6 w-6 mr-2" />
           <h3 class="text-lg font-semibold">Location Access</h3>
         </div>
-        <Button variant="ghost" size="icon" @click="close">
+        <Button variant="ghost" size="icon" @click="handleNotNow">
           <XIcon class="h-4 w-4" />
         </Button>
       </div>
@@ -40,7 +40,7 @@
       </div>
 
       <div class="mt-6 flex gap-3">
-        <Button variant="outline" class="flex-1" @click="close">
+        <Button variant="outline" class="flex-1" @click="handleNotNow">
           Not now
         </Button>
         <Button class="flex-1" @click="confirm">
@@ -56,6 +56,7 @@
 import { ref, watch } from "vue";
 import { Button } from "@/components/ui/button";
 import { MapPinIcon, XIcon } from "lucide-vue-next";
+import { useUserPreferences } from "~/composables/useUserPreferences";
 
 const props = defineProps({
   modelValue: {
@@ -68,9 +69,11 @@ const props = defineProps({
   },
 });
 
-const emit = defineEmits(["update:modelValue", "confirm"]);
+const emit = defineEmits(["update:modelValue", "confirm", "decline"]);
 
 const isOpen = ref(props.modelValue);
+const { markLocationPromptAsShown, denyLocationPermission } =
+  useUserPreferences();
 
 watch(
   () => props.modelValue,
@@ -84,7 +87,17 @@ const close = () => {
   emit("update:modelValue", false);
 };
 
+const handleNotNow = () => {
+  // Mark the prompt as shown and the location as denied
+  markLocationPromptAsShown();
+  denyLocationPermission();
+  emit("decline");
+  close();
+};
+
 const confirm = () => {
+  // Mark the prompt as shown
+  markLocationPromptAsShown();
   emit("confirm");
   close();
 };
