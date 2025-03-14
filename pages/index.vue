@@ -88,8 +88,8 @@
                     {{ currentWeather.name }}, {{ currentWeather.sys?.country }}
                   </h2>
                   <p class="text-lg opacity-90">{{ formattedDate }}</p>
-                  <p v-if="isTimeAvailable" class="text-md opacity-80">
-                    {{ formattedTimeAndTimezone }}
+                  <p v-if="cityLocalTime" class="text-md opacity-80">
+                    {{ formattedLocalTime }} ({{ timezoneString }})
                   </p>
                 </div>
 
@@ -247,7 +247,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from "vue";
+import { ref, computed, onMounted, onUnmounted, watch } from "vue";
 import {
   CloudIcon,
   SearchIcon,
@@ -276,6 +276,12 @@ const loading = ref(true);
 const error = ref(null);
 const isDark = ref(false);
 
+// Clock and timezone variables
+const cityLocalTime = ref(null);
+const timezoneOffsetSeconds = ref(0);
+const clockInterval = ref(null);
+const timezoneString = ref("");
+
 // Format the current date
 const formattedDate = computed(() => {
   return new Date().toLocaleDateString("en-US", {
@@ -286,48 +292,54 @@ const formattedDate = computed(() => {
   });
 });
 
-// Check if time data is available
-const isTimeAvailable = computed(() => {
-  return currentWeather.value && currentWeather.value.timezone !== undefined;
+// Format just the time portion
+const formattedLocalTime = computed(() => {
+  if (!cityLocalTime.value) return "";
+
+  return cityLocalTime.value.toLocaleTimeString("en-US", {
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hour12: true,
+  });
 });
 
-// Format the current time and timezone
-const formattedTimeAndTimezone = computed(() => {
-  if (!isTimeAvailable.value) {
-    return "";
+// Update the city's local time every second
+const startClock = () => {
+  // Clear any existing interval
+  if (clockInterval.value) {
+    clearInterval(clockInterval.value);
   }
 
-  // OpenWeatherMap returns timezone offset in seconds from UTC
-  const timezoneOffsetSeconds = currentWeather.value.timezone;
+  // Set up the interval to update every second
+  clockInterval.value = setInterval(() => {
+    updateCityTime();
+  }, 1000);
 
+  // Initialize the time immediately
+  updateCityTime();
+};
+
+// Update the city's local time based on the timezone offset from the API
+const updateCityTime = () => {
   // Get current UTC time
   const now = new Date();
   const utcTime = now.getTime() + now.getTimezoneOffset() * 60000;
 
   // Calculate city's local time by applying the timezone offset
-  const cityLocalTime = new Date(utcTime + timezoneOffsetSeconds * 1000);
+  cityLocalTime.value = new Date(utcTime + timezoneOffsetSeconds.value * 1000);
+};
 
-  // Format time
-  const timeString = cityLocalTime.toLocaleTimeString("en-US", {
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: true,
-  });
+// Format the timezone string (GMT+XX:XX format)
+const updateTimezoneString = () => {
+  const offsetSeconds = timezoneOffsetSeconds.value;
+  const timezoneHours = Math.abs(Math.floor(offsetSeconds / 3600));
+  const timezoneMinutes = Math.abs(Math.floor((offsetSeconds % 3600) / 60));
 
-  // Format timezone name
-  // Convert seconds to hours for cleaner display
-  const timezoneHours = Math.abs(Math.floor(timezoneOffsetSeconds / 3600));
-  const timezoneMinutes = Math.abs(
-    Math.floor((timezoneOffsetSeconds % 3600) / 60)
-  );
-  const timezoneString = `GMT${
-    timezoneOffsetSeconds >= 0 ? "+" : "-"
-  }${timezoneHours.toString().padStart(2, "0")}:${timezoneMinutes
+  timezoneString.value = `GMT${offsetSeconds >= 0 ? "+" : "-"}${timezoneHours
     .toString()
-    .padStart(2, "0")}`;
-
-  return `${timeString} (${timezoneString})`;
-});
+    .padStart(2, "0")}:${timezoneMinutes.toString().padStart(2, "0")}`;
+};
 
 // Extract daily forecasts (one per day)
 const dailyForecasts = computed(() => {
@@ -382,6 +394,13 @@ const searchCity = async () => {
     } else {
       currentWeather.value = data.current;
       forecast.value = data.forecast;
+
+      // Update the timezone offset and restart the clock
+      if (data.current && data.current.timezone !== undefined) {
+        timezoneOffsetSeconds.value = data.current.timezone;
+        updateTimezoneString();
+        startClock();
+      }
     }
   } catch (err) {
     error.value = "Failed to fetch weather data. Please try again.";
@@ -390,6 +409,18 @@ const searchCity = async () => {
     loading.value = false;
   }
 };
+
+// Watch for changes in the currentWeather timezone
+watch(
+  () => currentWeather.value?.timezone,
+  (newTimezone) => {
+    if (newTimezone !== undefined) {
+      timezoneOffsetSeconds.value = newTimezone;
+      updateTimezoneString();
+      startClock();
+    }
+  }
+);
 
 // Initialize with a default city on page load
 onMounted(async () => {
@@ -402,6 +433,13 @@ onMounted(async () => {
     } else {
       currentWeather.value = data.current;
       forecast.value = data.forecast;
+
+      // Initialize the timezone offset and start the clock
+      if (data.current && data.current.timezone !== undefined) {
+        timezoneOffsetSeconds.value = data.current.timezone;
+        updateTimezoneString();
+        startClock();
+      }
     }
   } catch (err) {
     error.value = "Failed to fetch weather data";
@@ -417,6 +455,13 @@ onMounted(async () => {
   ) {
     isDark.value = true;
     document.documentElement.classList.add("dark");
+  }
+});
+
+// Clean up the interval when the component is destroyed
+onUnmounted(() => {
+  if (clockInterval.value) {
+    clearInterval(clockInterval.value);
   }
 });
 </script>
