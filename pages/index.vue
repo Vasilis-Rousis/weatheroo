@@ -94,15 +94,11 @@
                 </div>
 
                 <div class="flex items-center mt-4 md:mt-0">
-                  <NuxtImg
+                  <WeatherIcons
                     v-if="currentWeather.weather?.[0]?.icon"
-                    :src="`https://openweathermap.org/img/wn/${currentWeather.weather[0].icon}@2x.png`"
-                    :alt="currentWeather.weather?.[0]?.description"
-                    width="80"
-                    height="80"
+                    :weather-code="currentWeather.weather[0].icon"
+                    size="large"
                     class="weather-icon"
-                    loading="eager"
-                    format="webp"
                   />
                   <div class="text-center">
                     <h3 class="text-5xl font-bold">
@@ -185,14 +181,11 @@
                 }}</CardTitle>
               </CardHeader>
               <CardContent class="text-center py-2">
-                <NuxtImg
-                  :src="`https://openweathermap.org/img/wn/${forecastDay.weather[0].icon}@2x.png`"
-                  :alt="forecastDay.weather[0].description"
-                  width="64"
-                  height="64"
+                <!-- Replace NuxtImg with WeatherIcons in forecast cards -->
+                <WeatherIcons
+                  :weather-code="forecastDay.weather[0].icon"
+                  size="medium"
                   class="mx-auto"
-                  loading="lazy"
-                  format="webp"
                 />
                 <p class="text-2xl font-bold mb-1">
                   {{ Math.round(forecastDay.main.temp) }}°C
@@ -209,7 +202,7 @@
                     <DropletIcon class="h-3 w-3 mr-1" />
                     {{ forecastDay.main.humidity }}%
                   </div>
-                  <div class="flex items-center">
+                  <div class="flex items-center justify-end">
                     <WindIcon class="h-3 w-3 mr-1" />
                     {{ Math.round(forecastDay.wind.speed) }} m/s
                   </div>
@@ -268,6 +261,7 @@ import {
   CardFooter,
 } from "@/components/ui/card";
 import WeatherAnimation from "~/components/WeatherAnimation.vue";
+import WeatherIcons from "~/components/WeatherIcons.vue";
 
 const searchQuery = ref("");
 const currentWeather = ref({});
