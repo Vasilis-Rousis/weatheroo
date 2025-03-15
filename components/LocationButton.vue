@@ -1,6 +1,6 @@
 <!-- components/LocationButton.vue -->
 <script setup>
-import { defineEmits, ref, watch } from "vue";
+import { ref, watch } from "vue";
 import { MapPinIcon, MapPinOffIcon } from "lucide-vue-next";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";

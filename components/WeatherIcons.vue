@@ -163,7 +163,7 @@ const isWeatherCode = (code) => props.weatherCode.startsWith(code);
 /* Cloud Styles */
 .cloud-small, .cloud-medium {
   position: absolute;
-  background: white;
+  background: #f0f0f0;
   border-radius: 50px;
   box-shadow: 0 0 10px rgba(200, 200, 200, 0.5);
 }
@@ -186,7 +186,7 @@ const isWeatherCode = (code) => props.weatherCode.startsWith(code);
 .cloud-medium:before, .cloud-medium:after {
   content: '';
   position: absolute;
-  background: white;
+  background: #f0f0f0;
   border-radius: 50%;
 }
 
