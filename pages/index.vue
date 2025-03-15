@@ -243,6 +243,16 @@
             </Card>
           </div>
 
+          <!-- Hourly Forecast -->
+          <h2 class="text-2xl font-bold mb-4">Hourly Forecast</h2>
+          <HourlyForecast
+            v-if="!loading && !error"
+            :forecast="forecast"
+            :loading="loading"
+            class="mb-8 opacity-0 animate-fadeIn"
+            style="animation-delay: 150ms; animation-fill-mode: forwards"
+          />
+
           <!-- Weather Map Section -->
           <div
             class="mt-8 opacity-0 animate-fadeIn"
@@ -297,6 +307,7 @@ import WeatherAnimation from "~/components/WeatherAnimation.vue";
 import WeatherIcons from "~/components/WeatherIcons.vue";
 import LocationButton from "~/components/LocationButton.vue";
 import LocationDialog from "~/components/LocationDialog.vue";
+import HourlyForecast from "~/components/HourlyForecast.vue"; // Add this import
 import { useLocationService } from "~/composables/useLocationService";
 import { useWeatherService } from "~/composables/useWeatherService";
 import { useUserPreferences } from "~/composables/useUserPreferences";
