@@ -32,7 +32,9 @@
             </h1>
           </div>
 
-          <div class="w-full md:w-96 mr-20 relative header-element header-search">
+          <div
+            class="w-full md:w-96 mr-20 relative header-element header-search"
+          >
             <div class="flex gap-2 items-center">
               <div class="relative md:max-w-60 flex-1">
                 <Input
@@ -56,6 +58,7 @@
                 :is-loading="locationLoading"
                 class="header-element location-button"
                 @request-location="handleLocationRequest"
+                @disable-location="handleLocationDisable"
               />
             </div>
 
@@ -311,8 +314,11 @@ const {
   lastCity,
   locationPromptShown,
   locationPermissionDenied,
+  locationPermissionEnabled,
   darkMode,
   updateLastCity,
+  enableLocationPermission,
+  disableLocationPermission,
 } = useUserPreferences();
 
 // Set isDark from stored preference
@@ -325,6 +331,7 @@ const {
   locationError,
   coordinates,
   requestLocation,
+  clearCoordinates,
 } = useLocationService();
 
 const { getWeatherByCity, getWeatherByCoords } = useWeatherService();
@@ -497,12 +504,34 @@ const handleLocationRequest = async () => {
 
         // Save the city in user preferences
         updateLastCity(result.current.name);
+
+        // Save location permission preference
+        enableLocationPermission();
       }
 
       loading.value = false;
     }
   } catch (err) {
     console.error("Error getting location:", err);
+  }
+};
+
+// Handle disabling location
+const handleLocationDisable = () => {
+  // Update local state to disable location and clear coordinates
+  clearCoordinates();
+
+  // Update user preferences to disable location
+  disableLocationPermission();
+
+  // If we have a last city, load it
+  if (lastCity.value) {
+    searchQuery.value = lastCity.value;
+    searchCity();
+  } else {
+    // Otherwise, load a default city (London)
+    searchQuery.value = "London";
+    searchCity();
   }
 };
 
@@ -585,7 +614,38 @@ onMounted(async () => {
   try {
     loading.value = true;
 
-    // First, check if we have a saved city to load
+    // First, check if location is enabled in preferences and coordinates are available
+    if (locationPermissionEnabled.value && "geolocation" in navigator) {
+      try {
+        const position = await requestLocation();
+        if (position) {
+          const result = await getWeatherByCoords(
+            position.latitude,
+            position.longitude
+          );
+
+          if (!result.error) {
+            currentWeather.value = result.current;
+            forecast.value = result.forecast;
+            searchQuery.value = result.current.name;
+            updateLastCity(result.current.name);
+
+            if (result.current && result.current.timezone !== undefined) {
+              timezoneOffsetSeconds.value = result.current.timezone;
+              updateTimezoneString();
+              startClock();
+            }
+
+            loading.value = false;
+            return; // Exit early if geolocation worked
+          }
+        }
+      } catch (err) {
+        console.error("Error using saved location permission:", err);
+      }
+    }
+
+    // Second, check if we have a saved city to load
     if (lastCity.value) {
       searchQuery.value = lastCity.value;
       const result = await getWeatherByCity(lastCity.value);

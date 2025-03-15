@@ -17,6 +17,12 @@ export function useUserPreferences() {
     false
   );
 
+  // Store whether the user has explicitly enabled location
+  const locationPermissionEnabled = useStorage(
+    "weatheroo-location-enabled",
+    false
+  );
+
   // Store the user's theme preference (light/dark)
   const darkMode = useStorage("weatheroo-dark-mode", false);
 
@@ -33,6 +39,18 @@ export function useUserPreferences() {
   // Function to mark location permission as denied
   const denyLocationPermission = () => {
     locationPermissionDenied.value = true;
+    locationPermissionEnabled.value = false;
+  };
+
+  // Function to mark location permission as enabled
+  const enableLocationPermission = () => {
+    locationPermissionEnabled.value = true;
+    locationPermissionDenied.value = false;
+  };
+
+  // Function to disable location permission that was previously enabled
+  const disableLocationPermission = () => {
+    locationPermissionEnabled.value = false;
   };
 
   // Function to update theme preference
@@ -44,10 +62,13 @@ export function useUserPreferences() {
     lastCity,
     locationPromptShown,
     locationPermissionDenied,
+    locationPermissionEnabled,
     darkMode,
     updateLastCity,
     markLocationPromptAsShown,
     denyLocationPermission,
+    enableLocationPermission,
+    disableLocationPermission,
     updateThemePreference,
   };
 }

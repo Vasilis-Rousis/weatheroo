@@ -110,6 +110,12 @@ export function useLocationService() {
     }
   };
 
+  // Clear the coordinates and set location as disabled
+  const clearCoordinates = () => {
+    coordinates.value = null;
+    locationEnabled.value = false;
+  };
+
   // Initialize on mount
   onMounted(async () => {
     const isGranted = await checkPermissionStatus();
@@ -133,5 +139,6 @@ export function useLocationService() {
     isGeolocationSupported,
     checkPermissionStatus,
     requestLocation,
+    clearCoordinates,
   };
 }

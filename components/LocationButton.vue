@@ -20,28 +20,47 @@ const props = defineProps({
   },
 });
 
-const emit = defineEmits(["request-location"]);
+const emit = defineEmits(["request-location", "disable-location"]);
 const showEnabledMessage = ref(false);
+const showDisabledMessage = ref(false);
 
 // Watch for changes in isEnabled to control message visibility
 watch(
   () => props.isEnabled,
   (newValue) => {
     if (newValue) {
-      // Show the message
+      // Show the enabled message
       showEnabledMessage.value = true;
+      showDisabledMessage.value = false;
 
       // Set a timer to hide the message after 2 seconds
       setTimeout(() => {
         showEnabledMessage.value = false;
       }, 2000);
+    } else {
+      // Only show disabled message if it was previously enabled
+      if (showEnabledMessage.value) {
+        showDisabledMessage.value = true;
+        showEnabledMessage.value = false;
+
+        // Set a timer to hide the message after 2 seconds
+        setTimeout(() => {
+          showDisabledMessage.value = false;
+        }, 2000);
+      }
     }
   },
   { immediate: true }
 );
 
-const requestLocation = () => {
-  emit("request-location");
+const handleClick = () => {
+  if (props.isEnabled) {
+    // If location is enabled, emit event to disable it
+    emit("disable-location");
+  } else {
+    // If location is disabled, emit event to request it
+    emit("request-location");
+  }
 };
 </script>
 
@@ -56,7 +75,7 @@ const requestLocation = () => {
           ? 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800'
           : ''
       "
-      @click="requestLocation"
+      @click="handleClick"
     >
       <div
         v-if="isLoading"
@@ -70,11 +89,17 @@ const requestLocation = () => {
     </Button>
 
     <span
-      v-if="isEnabled && showEnabledMessage"
-      class="ml-2 text-xs text-green-600 dark:text-green-400 transition-opacity duration-300"
-      :class="showEnabledMessage ? 'animate-fadeIn' : 'animate-fadeOut'"
+      v-if="showEnabledMessage"
+      class="ml-2 text-xs text-green-600 dark:text-green-400 transition-opacity duration-300 animate-fadeIn"
     >
       Location enabled
+    </span>
+
+    <span
+      v-if="showDisabledMessage"
+      class="ml-2 text-xs text-gray-600 dark:text-gray-400 transition-opacity duration-300 animate-fadeIn"
+    >
+      Location disabled
     </span>
   </div>
 </template>
