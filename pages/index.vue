@@ -73,6 +73,7 @@
           </div>
 
           <Button
+            :key="`theme-toggle-${isDark}`"
             variant="outline"
             size="icon"
             class="header-element header-theme-toggle"
@@ -272,7 +273,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted, watch } from "vue";
+import { ref, computed, onMounted, onUnmounted, watch, nextTick } from "vue";
 import {
   CloudIcon,
   SearchIcon,
@@ -431,12 +432,16 @@ const formatDay = (timestamp) => {
 };
 
 // Toggle dark/light theme
-const toggleTheme = () => {
+const toggleTheme = async () => {
   isDark.value = !isDark.value;
+
   document.documentElement.classList.toggle("dark", isDark.value);
 
   // Save the theme preference
   darkMode.value = isDark.value;
+
+  // Force a refresh with nextTick
+  await nextTick();
 };
 
 // Search for a city's weather
