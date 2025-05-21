@@ -73,14 +73,19 @@
           </div>
 
           <Button
-            :key="`theme-toggle-${isDark}`"
             variant="outline"
             size="icon"
             class="header-element header-theme-toggle"
             @click="toggleTheme"
           >
-            <SunIcon v-if="isDark" class="h-5 w-5" />
-            <MoonIcon v-else class="h-5 w-5" />
+            <ClientOnly>
+              <SunIcon v-if="isDark" class="h-5 w-5" />
+              <MoonIcon v-else class="h-5 w-5" />
+              <template #fallback>
+                <!-- Server-side placeholder -->
+                <div class="h-5 w-5" />
+              </template>
+            </ClientOnly>
           </Button>
         </div>
       </header>
@@ -465,9 +470,6 @@ const formatDay = (timestamp) => {
 // Toggle dark/light theme using colorMode
 const toggleTheme = async () => {
   colorMode.preference = isDark.value ? "light" : "dark";
-
-  // Force a refresh with nextTick - may not be needed with colorMode module
-  await nextTick();
 };
 
 // Search for a city's weather
