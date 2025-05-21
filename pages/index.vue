@@ -87,179 +87,184 @@
 
       <!-- Main content -->
       <main>
-        <!-- Loading State -->
-        <div v-if="loading" class="flex justify-center items-center py-20">
-          <div
-            class="animate-spin h-10 w-10 border-4 border-blue-500 border-t-transparent rounded-full"
-          />
-        </div>
+        <Transition name="fade" mode="out-in">
+          <!-- Loading State -->
+          <div v-if="loading" key="loading">
+            <SkeletonLoader />
+          </div>
 
-        <!-- Error State -->
-        <div v-else-if="error" class="text-center py-20">
-          <AlertTriangleIcon class="w-16 h-16 mx-auto text-red-500 mb-4" />
-          <p class="text-xl">{{ error }}</p>
-          <Button class="mt-4" @click="searchCity">Try Again</Button>
-        </div>
+          <!-- Error State -->
+          <div v-else-if="error" key="error" class="text-center py-20">
+            <AlertTriangleIcon class="w-16 h-16 mx-auto text-red-500 mb-4" />
+            <p class="text-xl">{{ error }}</p>
+            <Button class="mt-4" @click="searchCity">Try Again</Button>
+          </div>
 
-        <!-- Weather Data -->
-        <div v-else>
-          <!-- Current Weather Card -->
-          <Card
-            class="mb-8 overflow-hidden border-none shadow-lg transform transition-all duration-300 hover:shadow-xl opacity-95"
-          >
-            <div
-              class="bg-gradient-to-r from-blue-400 to-blue-600 dark:from-blue-600 dark:to-blue-800 p-6 text-white relative"
+          <!-- Weather Data -->
+          <div v-else key="content">
+            <!-- Current Weather Card -->
+            <Card
+              class="mb-8 overflow-hidden border-none shadow-lg transform transition-all duration-300 hover:shadow-xl opacity-95"
             >
               <div
-                class="flex flex-col md:flex-row justify-between items-center"
+                class="bg-gradient-to-r from-blue-400 to-blue-600 dark:from-blue-600 dark:to-blue-800 p-6 text-white relative"
               >
-                <div>
-                  <h2 class="text-3xl font-bold mb-1 flex items-center gap-2">
-                    {{ currentWeather.name }}, {{ currentWeather.sys?.country }}
-                    <MapPinIcon
-                      v-if="locationEnabled"
-                      class="h-5 w-5 inline-block"
-                    />
-                  </h2>
-                  <p class="text-lg opacity-90">{{ formattedDate }}</p>
-                  <p v-if="cityLocalTime" class="text-md opacity-80">
-                    {{ formattedLocalTime }} ({{ timezoneString }})
-                  </p>
-                </div>
+                <div
+                  class="flex flex-col md:flex-row justify-between items-center"
+                >
+                  <div>
+                    <h2 class="text-3xl font-bold mb-1 flex items-center gap-2">
+                      {{ currentWeather.name }},
+                      {{ currentWeather.sys?.country }}
+                      <MapPinIcon
+                        v-if="locationEnabled"
+                        class="h-5 w-5 inline-block"
+                      />
+                    </h2>
+                    <p class="text-lg opacity-90">{{ formattedDate }}</p>
+                    <p v-if="cityLocalTime" class="text-md opacity-80">
+                      {{ formattedLocalTime }} ({{ timezoneString }})
+                    </p>
+                  </div>
 
-                <div class="flex items-center mt-4 md:mt-0">
-                  <WeatherIcons
-                    v-if="currentWeather.weather?.[0]?.icon"
-                    :weather-code="currentWeather.weather[0].icon"
-                    size="large"
-                    class="weather-icon"
-                  />
-                  <div class="text-center">
-                    <h3 class="text-5xl font-bold">
-                      {{ Math.round(currentWeather.main?.temp) }}°C
-                    </h3>
-                    <p class="text-xl capitalize">
-                      {{ currentWeather.weather?.[0]?.description }}
+                  <div class="flex items-center mt-4 md:mt-0">
+                    <WeatherIcons
+                      v-if="currentWeather.weather?.[0]?.icon"
+                      :weather-code="currentWeather.weather[0].icon"
+                      size="large"
+                      class="weather-icon"
+                    />
+                    <div class="text-center">
+                      <h3 class="text-5xl font-bold">
+                        {{ Math.round(currentWeather.main?.temp) }}°C
+                      </h3>
+                      <p class="text-xl capitalize">
+                        {{ currentWeather.weather?.[0]?.description }}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <CardContent class="p-6">
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  <div
+                    class="text-center p-3 rounded-lg bg-gray-50 dark:bg-gray-800 transform transition duration-300 hover:scale-105"
+                  >
+                    <ThermometerIcon
+                      class="h-6 w-6 mx-auto mb-2 text-yellow-500"
+                    />
+                    <p class="text-sm text-gray-500 dark:text-gray-400">
+                      Feels Like
+                    </p>
+                    <p class="text-xl font-semibold">
+                      {{ Math.round(currentWeather.main?.feels_like) }}°C
+                    </p>
+                  </div>
+
+                  <div
+                    class="text-center p-3 rounded-lg bg-gray-50 dark:bg-gray-800 transform transition duration-300 hover:scale-105"
+                  >
+                    <DropletIcon class="h-6 w-6 mx-auto mb-2 text-blue-500" />
+                    <p class="text-sm text-gray-500 dark:text-gray-400">
+                      Humidity
+                    </p>
+                    <p class="text-xl font-semibold">
+                      {{ currentWeather.main?.humidity }}%
+                    </p>
+                  </div>
+
+                  <div
+                    class="text-center p-3 rounded-lg bg-gray-50 dark:bg-gray-800 transform transition duration-300 hover:scale-105"
+                  >
+                    <WindIcon class="h-6 w-6 mx-auto mb-2 text-gray-500" />
+                    <p class="text-sm text-gray-500 dark:text-gray-400">
+                      Wind Speed
+                    </p>
+                    <p class="text-xl font-semibold">
+                      {{ Math.round(currentWeather.wind?.speed) }} m/s
+                    </p>
+                  </div>
+
+                  <div
+                    class="text-center p-3 rounded-lg bg-gray-50 dark:bg-gray-800 transform transition duration-300 hover:scale-105"
+                  >
+                    <CloudIcon class="h-6 w-6 mx-auto mb-2 text-gray-400" />
+                    <p class="text-sm text-gray-500 dark:text-gray-400">
+                      Cloudiness
+                    </p>
+                    <p class="text-xl font-semibold">
+                      {{ currentWeather.clouds?.all }}%
                     </p>
                   </div>
                 </div>
-              </div>
+              </CardContent>
+            </Card>
+
+            <!-- Daily Forecast -->
+            <h2 class="text-2xl font-bold mb-4">5-Day Forecast</h2>
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+              <Card
+                v-for="(forecastDay, index) in dailyForecasts"
+                :key="index"
+                class="border-none shadow-md forecast-card transition-all duration-300 transform hover:shadow-lg hover:scale-105"
+              >
+                <CardHeader class="pb-2">
+                  <CardTitle class="text-lg">{{
+                    formatDay(forecastDay.dt)
+                  }}</CardTitle>
+                </CardHeader>
+                <CardContent class="text-center py-2">
+                  <WeatherIcons
+                    :weather-code="forecastDay.weather[0].icon"
+                    size="medium"
+                    class="mx-auto my-8"
+                  />
+                  <p class="text-2xl font-bold mb-1">
+                    {{ Math.round(forecastDay.main.temp) }}°C
+                  </p>
+                  <p
+                    class="text-sm capitalize text-gray-500 dark:text-gray-400"
+                  >
+                    {{ forecastDay.weather[0].description }}
+                  </p>
+                </CardContent>
+                <CardFooter class="pt-0 pb-4">
+                  <div
+                    class="w-full grid grid-cols-2 gap-2 text-xs text-gray-500 dark:text-gray-400"
+                  >
+                    <div class="flex items-center">
+                      <DropletIcon class="h-3 w-3 mr-1" />
+                      {{ forecastDay.main.humidity }}%
+                    </div>
+                    <div class="flex items-center justify-end">
+                      <WindIcon class="h-3 w-3 mr-1" />
+                      {{ Math.round(forecastDay.wind.speed) }} m/s
+                    </div>
+                  </div>
+                </CardFooter>
+              </Card>
             </div>
 
-            <CardContent class="p-6">
-              <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <div
-                  class="text-center p-3 rounded-lg bg-gray-50 dark:bg-gray-800 transform transition duration-300 hover:scale-105"
-                >
-                  <ThermometerIcon
-                    class="h-6 w-6 mx-auto mb-2 text-yellow-500"
-                  />
-                  <p class="text-sm text-gray-500 dark:text-gray-400">
-                    Feels Like
-                  </p>
-                  <p class="text-xl font-semibold">
-                    {{ Math.round(currentWeather.main?.feels_like) }}°C
-                  </p>
-                </div>
-
-                <div
-                  class="text-center p-3 rounded-lg bg-gray-50 dark:bg-gray-800 transform transition duration-300 hover:scale-105"
-                >
-                  <DropletIcon class="h-6 w-6 mx-auto mb-2 text-blue-500" />
-                  <p class="text-sm text-gray-500 dark:text-gray-400">
-                    Humidity
-                  </p>
-                  <p class="text-xl font-semibold">
-                    {{ currentWeather.main?.humidity }}%
-                  </p>
-                </div>
-
-                <div
-                  class="text-center p-3 rounded-lg bg-gray-50 dark:bg-gray-800 transform transition duration-300 hover:scale-105"
-                >
-                  <WindIcon class="h-6 w-6 mx-auto mb-2 text-gray-500" />
-                  <p class="text-sm text-gray-500 dark:text-gray-400">
-                    Wind Speed
-                  </p>
-                  <p class="text-xl font-semibold">
-                    {{ Math.round(currentWeather.wind?.speed) }} m/s
-                  </p>
-                </div>
-
-                <div
-                  class="text-center p-3 rounded-lg bg-gray-50 dark:bg-gray-800 transform transition duration-300 hover:scale-105"
-                >
-                  <CloudIcon class="h-6 w-6 mx-auto mb-2 text-gray-400" />
-                  <p class="text-sm text-gray-500 dark:text-gray-400">
-                    Cloudiness
-                  </p>
-                  <p class="text-xl font-semibold">
-                    {{ currentWeather.clouds?.all }}%
-                  </p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <!-- Daily Forecast -->
-          <h2 class="text-2xl font-bold mb-4">5-Day Forecast</h2>
-          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
-            <Card
-              v-for="(forecastDay, index) in dailyForecasts"
-              :key="index"
-              class="border-none shadow-md forecast-card transition-all duration-300 transform hover:shadow-lg hover:scale-105"
+            <!-- Weather Map Section -->
+            <div
+              class="mt-8 opacity-0 animate-fadeIn"
+              style="animation-delay: 300ms; animation-fill-mode: forwards"
             >
-              <CardHeader class="pb-2">
-                <CardTitle class="text-lg">{{
-                  formatDay(forecastDay.dt)
-                }}</CardTitle>
-              </CardHeader>
-              <CardContent class="text-center py-2">
-                <WeatherIcons
-                  :weather-code="forecastDay.weather[0].icon"
-                  size="medium"
-                  class="mx-auto my-8"
-                />
-                <p class="text-2xl font-bold mb-1">
-                  {{ Math.round(forecastDay.main.temp) }}°C
-                </p>
-                <p class="text-sm capitalize text-gray-500 dark:text-gray-400">
-                  {{ forecastDay.weather[0].description }}
-                </p>
-              </CardContent>
-              <CardFooter class="pt-0 pb-4">
+              <h2 class="text-2xl font-bold mb-4">Weather Map</h2>
+              <Card class="border-none shadow-md overflow-hidden h-64">
                 <div
-                  class="w-full grid grid-cols-2 gap-2 text-xs text-gray-500 dark:text-gray-400"
+                  class="h-full w-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center"
                 >
-                  <div class="flex items-center">
-                    <DropletIcon class="h-3 w-3 mr-1" />
-                    {{ forecastDay.main.humidity }}%
-                  </div>
-                  <div class="flex items-center justify-end">
-                    <WindIcon class="h-3 w-3 mr-1" />
-                    {{ Math.round(forecastDay.wind.speed) }} m/s
-                  </div>
+                  <p class="text-gray-500">
+                    Weather map will be displayed here
+                  </p>
+                  <!-- You can integrate a real map using libraries like Mapbox or Google Maps -->
                 </div>
-              </CardFooter>
-            </Card>
+              </Card>
+            </div>
           </div>
-
-          <!-- Weather Map Section -->
-          <div
-            class="mt-8 opacity-0 animate-fadeIn"
-            style="animation-delay: 300ms; animation-fill-mode: forwards"
-          >
-            <h2 class="text-2xl font-bold mb-4">Weather Map</h2>
-            <Card class="border-none shadow-md overflow-hidden h-64">
-              <div
-                class="h-full w-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center"
-              >
-                <p class="text-gray-500">Weather map will be displayed here</p>
-                <!-- You can integrate a real map using libraries like Mapbox or Google Maps -->
-              </div>
-            </Card>
-          </div>
-        </div>
+        </Transition>
       </main>
 
       <footer
@@ -298,6 +303,7 @@ import WeatherAnimation from "~/components/WeatherAnimation.vue";
 import WeatherIcons from "~/components/WeatherIcons.vue";
 import LocationButton from "~/components/LocationButton.vue";
 import LocationDialog from "~/components/LocationDialog.vue";
+import SkeletonLoader from "~/components/SkeletonLoader.vue";
 import { useLocationService } from "~/composables/useLocationService";
 import { useWeatherService } from "~/composables/useWeatherService";
 import { useUserPreferences } from "~/composables/useUserPreferences";
@@ -477,7 +483,10 @@ const searchCity = async () => {
     error.value = "Failed to fetch weather data. Please try again.";
     console.error(err);
   } finally {
-    loading.value = false;
+    // Add a small delay to allow skeleton to be visible briefly for better UX
+    setTimeout(() => {
+      loading.value = false;
+    }, 500);
   }
 };
 
@@ -514,7 +523,10 @@ const handleLocationRequest = async () => {
         enableLocationPermission();
       }
 
-      loading.value = false;
+      // Add a small delay to allow skeleton to be visible briefly for better UX
+      setTimeout(() => {
+        loading.value = false;
+      }, 500);
     }
   } catch (err) {
     console.error("Error getting location:", err);
@@ -576,7 +588,10 @@ watch(coordinates, async (newCoords) => {
       updateLastCity(result.current.name);
     }
 
-    loading.value = false;
+    // Add a small delay to allow skeleton to be visible briefly for better UX
+    setTimeout(() => {
+      loading.value = false;
+    }, 500);
   }
 });
 
@@ -641,7 +656,10 @@ onMounted(async () => {
               startClock();
             }
 
-            loading.value = false;
+            // Add a small delay to allow skeleton to be visible briefly for better UX
+            setTimeout(() => {
+              loading.value = false;
+            }, 800);
             return; // Exit early if geolocation worked
           }
         }
@@ -666,7 +684,10 @@ onMounted(async () => {
           startClock();
         }
 
-        loading.value = false;
+        // Add a small delay to allow skeleton to be visible briefly for better UX
+        setTimeout(() => {
+          loading.value = false;
+        }, 800);
         return; // Exit early if we successfully loaded the last city
       }
     }
@@ -699,7 +720,10 @@ onMounted(async () => {
             startClock();
           }
 
-          loading.value = false;
+          // Add a small delay to allow skeleton to be visible briefly for better UX
+          setTimeout(() => {
+            loading.value = false;
+          }, 800);
           return; // Exit early if geolocation worked
         }
       }
@@ -726,7 +750,10 @@ onMounted(async () => {
     error.value = "Failed to fetch weather data";
     console.error(err);
   } finally {
-    loading.value = false;
+    // Add a small delay to allow skeleton to be visible briefly for better UX
+    setTimeout(() => {
+      loading.value = false;
+    }, 800);
   }
 });
 
@@ -805,5 +832,16 @@ onUnmounted(() => {
     opacity: 1;
     transform: translateY(0);
   }
+}
+
+/* Transition styles for page content */
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.3s ease;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
 }
 </style>
