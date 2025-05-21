@@ -11,7 +11,7 @@ export const rateLimit = {
   resetTime: Date.now() + 60 * 1000,
   dailyCount: 0,
   dailyResetTime: new Date().setHours(0, 0, 0, 0) + 24 * 60 * 60 * 1000, // Next midnight
-  dailyLimit: 950, // Keep below 1000 for safety
+  dailyLimit: 700, // Keep below 1000 for safety
 };
 
 // Reset the rate limit counter

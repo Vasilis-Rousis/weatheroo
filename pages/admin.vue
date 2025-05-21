@@ -180,9 +180,9 @@ const usageData = ref({
   },
   daily: {
     count: 0,
-    limit: 950,
+    limit: 700,
     resetTime: "",
-    remaining: 950,
+    remaining: 700,
     percentUsed: 0,
   },
   cacheStats: {
