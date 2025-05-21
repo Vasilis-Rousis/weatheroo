@@ -23,9 +23,6 @@ export function useUserPreferences() {
     false
   );
 
-  // Store the user's theme preference (light/dark)
-  const darkMode = useStorage("weatheroo-dark-mode", false);
-
   // Function to update the last city
   const updateLastCity = (city: string) => {
     lastCity.value = city;
@@ -53,22 +50,15 @@ export function useUserPreferences() {
     locationPermissionEnabled.value = false;
   };
 
-  // Function to update theme preference
-  const updateThemePreference = (isDark: boolean) => {
-    darkMode.value = isDark;
-  };
-
   return {
     lastCity,
     locationPromptShown,
     locationPermissionDenied,
     locationPermissionEnabled,
-    darkMode,
     updateLastCity,
     markLocationPromptAsShown,
     denyLocationPermission,
     enableLocationPermission,
     disableLocationPermission,
-    updateThemePreference,
   };
 }

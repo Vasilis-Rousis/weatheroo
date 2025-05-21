@@ -7,7 +7,15 @@ export default defineNuxtConfig({
     "@nuxt/image",
     "@nuxtjs/tailwindcss",
     "shadcn-nuxt",
+    "@nuxtjs/color-mode", // Add the color mode module
   ],
+  // Configure the color mode module
+  colorMode: {
+    preference: "system", // default value is 'system'
+    fallback: "light", // fallback value if not system preference found
+    classSuffix: "", // This is important for Tailwind dark mode to work
+    storageKey: "weatheroo-dark-mode", // Use your existing storage key
+  },
   runtimeConfig: {
     openWeatherApiKey: process.env.OPENWEATHER_API_KEY,
   },

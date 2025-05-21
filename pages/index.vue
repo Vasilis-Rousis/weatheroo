@@ -335,7 +335,7 @@ const searchQuery = ref("");
 const currentWeather = ref({});
 const forecast = ref({});
 const loading = ref(true);
-const loadingFinished = ref(false); // New ref to track when data is fully loaded
+const loadingFinished = ref(false);
 const error = ref(null);
 const showLocationDialog = ref(false);
 const showLocationError = ref(false);
@@ -346,14 +346,14 @@ const {
   locationPromptShown,
   locationPermissionDenied,
   locationPermissionEnabled,
-  darkMode,
   updateLastCity,
   enableLocationPermission,
   disableLocationPermission,
 } = useUserPreferences();
 
-// Set isDark from stored preference
-const isDark = ref(darkMode.value);
+// Use Nuxt's color mode composable
+const colorMode = useColorMode();
+const isDark = computed(() => colorMode.value === "dark");
 
 // Get location and weather services
 const {
@@ -461,20 +461,15 @@ const formatDay = (timestamp) => {
   });
 };
 
-// Toggle dark/light theme
+// Toggle dark/light theme using colorMode
 const toggleTheme = async () => {
-  isDark.value = !isDark.value;
+  colorMode.preference = isDark.value ? "light" : "dark";
 
-  document.documentElement.classList.toggle("dark", isDark.value);
-
-  // Save the theme preference
-  darkMode.value = isDark.value;
-
-  // Force a refresh with nextTick
+  // Force a refresh with nextTick - may not be needed with colorMode module
   await nextTick();
 };
 
-// Updated search for a city's weather with improved loading state handling
+// Search for a city's weather
 const searchCity = async () => {
   if (!searchQuery.value.trim()) return;
 
@@ -529,7 +524,7 @@ const searchCity = async () => {
   }
 };
 
-// Updated handle location request with improved loading state handling
+// Handle location request
 const handleLocationRequest = async () => {
   try {
     const position = await requestLocation();
@@ -689,10 +684,6 @@ watch(
 
 // Initialize app on page load
 onMounted(async () => {
-  // Apply stored theme preference
-  if (isDark.value) {
-    document.documentElement.classList.add("dark");
-  }
 
   try {
     loading.value = true;
