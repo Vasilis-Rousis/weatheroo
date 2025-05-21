@@ -86,22 +86,25 @@
       </header>
 
       <!-- Main content -->
-      <main>
-        <Transition name="fade" mode="out-in">
-          <!-- Loading State -->
-          <div v-if="loading" key="loading">
-            <SkeletonLoader />
-          </div>
-
+      <main class="relative min-h-[800px]">
+        <!-- Content Area -->
+        <div
+          v-if="loadingFinished && !loading"
+          class="fade-in-content transition-opacity"
+          :class="{
+            'opacity-100': loadingFinished && !loading,
+            'opacity-0': !loadingFinished || loading,
+          }"
+        >
           <!-- Error State -->
-          <div v-else-if="error" key="error" class="text-center py-20">
+          <div v-if="error" class="text-center py-20">
             <AlertTriangleIcon class="w-16 h-16 mx-auto text-red-500 mb-4" />
             <p class="text-xl">{{ error }}</p>
             <Button class="mt-4" @click="searchCity">Try Again</Button>
           </div>
 
           <!-- Weather Data -->
-          <div v-else key="content">
+          <div v-else>
             <!-- Current Weather Card -->
             <Card
               class="mb-8 overflow-hidden border-none shadow-lg transform transition-all duration-300 hover:shadow-xl opacity-95"
@@ -264,7 +267,18 @@
               </Card>
             </div>
           </div>
-        </Transition>
+        </div>
+
+        <!-- Loading State - Always present but with opacity controlled by state -->
+        <div
+          class="fade-out-skeleton absolute w-full top-0 left-0 transition-opacity duration-300"
+          :class="{
+            'opacity-0 z-0': loadingFinished && !loading,
+            'opacity-100 z-10': !loadingFinished || loading,
+          }"
+        >
+          <SkeletonLoader />
+        </div>
       </main>
 
       <footer
@@ -312,6 +326,7 @@ const searchQuery = ref("");
 const currentWeather = ref({});
 const forecast = ref({});
 const loading = ref(true);
+const loadingFinished = ref(false); // New ref to track when data is fully loaded
 const error = ref(null);
 const showLocationDialog = ref(false);
 const showLocationError = ref(false);
@@ -450,11 +465,13 @@ const toggleTheme = async () => {
   await nextTick();
 };
 
-// Search for a city's weather
+// Updated search for a city's weather with improved loading state handling
 const searchCity = async () => {
   if (!searchQuery.value.trim()) return;
 
+  // Reset states
   loading.value = true;
+  loadingFinished.value = false;
   error.value = null;
 
   try {
@@ -479,24 +496,41 @@ const searchCity = async () => {
       // Save the city in user preferences
       updateLastCity(searchQuery.value);
     }
+
+    // Mark data as loaded
+    loadingFinished.value = true;
+
+    // Wait for content to be rendered
+    await nextTick();
+
+    // Slightly delay hiding the skeleton for smoother transition
+    setTimeout(() => {
+      loading.value = false;
+    }, 300);
   } catch (err) {
     error.value = "Failed to fetch weather data. Please try again.";
     console.error(err);
-  } finally {
-    // Add a small delay to allow skeleton to be visible briefly for better UX
+
+    // Still mark as finished to show the error message
+    loadingFinished.value = true;
+
     setTimeout(() => {
       loading.value = false;
-    }, 500);
+    }, 300);
   }
 };
 
-// Handle location request
+// Updated handle location request with improved loading state handling
 const handleLocationRequest = async () => {
   try {
     const position = await requestLocation();
 
     if (position) {
+      // Reset states
       loading.value = true;
+      loadingFinished.value = false;
+      error.value = null;
+
       const result = await getWeatherByCoords(
         position.latitude,
         position.longitude
@@ -523,13 +557,23 @@ const handleLocationRequest = async () => {
         enableLocationPermission();
       }
 
-      // Add a small delay to allow skeleton to be visible briefly for better UX
+      // Mark data as loaded
+      loadingFinished.value = true;
+
+      // Wait for content to be rendered
+      await nextTick();
+
+      // Slightly delay hiding the skeleton for smoother transition
       setTimeout(() => {
         loading.value = false;
-      }, 500);
+      }, 300);
     }
   } catch (err) {
     console.error("Error getting location:", err);
+
+    // If there was an error, still update loading states
+    loadingFinished.value = true;
+    loading.value = false;
   }
 };
 
@@ -564,7 +608,11 @@ const handleLocationDecline = () => {
 // Watch for changes in the coordinates to update weather
 watch(coordinates, async (newCoords) => {
   if (newCoords) {
+    // Reset states
     loading.value = true;
+    loadingFinished.value = false;
+    error.value = null;
+
     const result = await getWeatherByCoords(
       newCoords.latitude,
       newCoords.longitude
@@ -588,10 +636,16 @@ watch(coordinates, async (newCoords) => {
       updateLastCity(result.current.name);
     }
 
-    // Add a small delay to allow skeleton to be visible briefly for better UX
+    // Mark data as loaded
+    loadingFinished.value = true;
+
+    // Wait for content to be rendered
+    await nextTick();
+
+    // Slightly delay hiding the skeleton for smoother transition
     setTimeout(() => {
       loading.value = false;
-    }, 500);
+    }, 300);
   }
 });
 
@@ -633,6 +687,7 @@ onMounted(async () => {
 
   try {
     loading.value = true;
+    loadingFinished.value = false;
 
     // First, check if location is enabled in preferences and coordinates are available
     if (locationPermissionEnabled.value && "geolocation" in navigator) {
@@ -656,7 +711,13 @@ onMounted(async () => {
               startClock();
             }
 
-            // Add a small delay to allow skeleton to be visible briefly for better UX
+            // Mark data as loaded and complete the loading transition
+            loadingFinished.value = true;
+
+            // Wait for content to be rendered
+            await nextTick();
+
+            // Slightly delay hiding the skeleton for smoother transition
             setTimeout(() => {
               loading.value = false;
             }, 800);
@@ -684,7 +745,13 @@ onMounted(async () => {
           startClock();
         }
 
-        // Add a small delay to allow skeleton to be visible briefly for better UX
+        // Mark data as loaded and complete the loading transition
+        loadingFinished.value = true;
+
+        // Wait for content to be rendered
+        await nextTick();
+
+        // Slightly delay hiding the skeleton for smoother transition
         setTimeout(() => {
           loading.value = false;
         }, 800);
@@ -720,7 +787,13 @@ onMounted(async () => {
             startClock();
           }
 
-          // Add a small delay to allow skeleton to be visible briefly for better UX
+          // Mark data as loaded and complete the loading transition
+          loadingFinished.value = true;
+
+          // Wait for content to be rendered
+          await nextTick();
+
+          // Slightly delay hiding the skeleton for smoother transition
           setTimeout(() => {
             loading.value = false;
           }, 800);
@@ -746,9 +819,15 @@ onMounted(async () => {
     } else {
       error.value = "Failed to load weather data";
     }
+
+    // Mark data as loaded regardless of success/failure
+    loadingFinished.value = true;
   } catch (err) {
     error.value = "Failed to fetch weather data";
     console.error(err);
+
+    // Mark as loaded to show the error state
+    loadingFinished.value = true;
   } finally {
     // Add a small delay to allow skeleton to be visible briefly for better UX
     setTimeout(() => {
@@ -783,7 +862,7 @@ onUnmounted(() => {
 @keyframes fadeIn {
   from {
     opacity: 0;
-    transform: translateY(20px);
+    transform: translateY(10px);
   }
   to {
     opacity: 1;
@@ -834,10 +913,60 @@ onUnmounted(() => {
   }
 }
 
-/* Transition styles for page content */
+/* Smooth transition between content and skeleton */
+.fade-in-content {
+  position: relative;
+  z-index: 10;
+  transition: opacity 0.6s ease;
+}
+
+.fade-out-skeleton {
+  transition: opacity 0.6s ease;
+}
+
+/* Make main a stacking context for proper overlay transitions */
+main {
+  position: relative;
+  min-height: 800px;
+}
+
+/* Apply separate entrance animations to weather content items */
+.forecast-card {
+  opacity: 0;
+  animation: fadeInUp 0.6s forwards;
+}
+
+.forecast-card:nth-child(1) {
+  animation-delay: 100ms;
+}
+.forecast-card:nth-child(2) {
+  animation-delay: 150ms;
+}
+.forecast-card:nth-child(3) {
+  animation-delay: 200ms;
+}
+.forecast-card:nth-child(4) {
+  animation-delay: 250ms;
+}
+.forecast-card:nth-child(5) {
+  animation-delay: 300ms;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Improved transition styles for skeleton elements */
 .fade-enter-active,
 .fade-leave-active {
-  transition: opacity 0.3s ease;
+  transition: opacity 0.4s ease;
 }
 
 .fade-enter-from,

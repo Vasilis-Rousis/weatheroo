@@ -4,7 +4,7 @@
     <!-- Current Weather Card Skeleton -->
     <Card class="mb-8 overflow-hidden border-none shadow-lg">
       <div
-        class="bg-gradient-to-r from-blue-400/70 to-blue-600/70 dark:from-blue-600/50 dark:to-blue-800/50 p-6 relative"
+        class="bg-gradient-to-r from-blue-400/70 to-blue-600/70 dark:from-blue-600/50 dark:to-blue-800/50 p-7 relative"
       >
         <div class="flex flex-col md:flex-row justify-between items-center">
           <div>
@@ -65,7 +65,7 @@
 
     <!-- 5-Day Forecast Skeletons -->
     <div
-      class="h-8 w-48 bg-gray-200 dark:bg-gray-700 rounded-md mb-4 animate-pulse"
+      class="h-9 w-48 bg-gray-200 dark:bg-gray-700 rounded-md mb-4 animate-pulse"
     />
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
       <Card v-for="i in 5" :key="`forecast-${i}`" class="border-none shadow-md">
