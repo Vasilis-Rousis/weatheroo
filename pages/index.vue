@@ -104,7 +104,7 @@
         <div v-else>
           <!-- Current Weather Card -->
           <Card
-            class="mb-8 overflow-hidden border-none shadow-lg transform transition-all duration-300 hover:shadow-xl"
+            class="mb-8 overflow-hidden border-none shadow-lg transform transition-all duration-300 hover:shadow-xl opacity-95"
           >
             <div
               class="bg-gradient-to-r from-blue-400 to-blue-600 dark:from-blue-600 dark:to-blue-800 p-6 text-white relative"
