@@ -164,7 +164,7 @@ onUnmounted(() => {
   background: white;
   border-radius: 40px;
   box-shadow: 0 0 10px rgba(255, 255, 255, 0.3);
-  animation: float 20s linear infinite;
+  animation: floatWithFade 20s linear infinite;
 }
 
 .cloud::before,
@@ -297,6 +297,21 @@ onUnmounted(() => {
   }
   100% {
     transform: translateY(calc(100vh + 10px)) rotate(360deg);
+  }
+}
+
+@keyframes floatWithFade {
+  0% {
+    transform: translateX(-100%);
+    opacity: 0;
+  }
+  2.5% {
+    /* 0.5s in a 20s animation = 2.5% */
+    opacity: 1;
+  }
+  100% {
+    transform: translateX(100vw);
+    opacity: 1;
   }
 }
 </style>

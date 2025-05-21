@@ -112,7 +112,7 @@
           <div v-else>
             <!-- Current Weather Card -->
             <Card
-              class="mb-8 overflow-hidden border-none shadow-lg transition-all duration-300 hover:shadow-xl opacity-95 weather-main-card"
+              class="mb-8 overflow-hidden border-none shadow-lg transition-all duration-300 hover:shadow-xl opacity-90 weather-main-card"
             >
               <div
                 class="bg-gradient-to-r from-blue-400 to-blue-600 dark:from-blue-600 dark:to-blue-800 p-6 text-white relative weather-card-header"
@@ -988,6 +988,15 @@ main {
   }
 }
 
+@keyframes simpleFadeInMainCard {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 0.9;
+  }
+}
+
 /* Improved transition styles for skeleton elements */
 .fade-enter-active,
 .fade-leave-active {
@@ -1001,7 +1010,7 @@ main {
 
 /* Weather card entrance animations - Simple fade in only */
 .weather-main-card {
-  animation: simpleFadeIn 0.5s ease-out forwards;
+  animation: simpleFadeInMainCard 0.5s ease-out forwards;
   opacity: 0;
 }
 
