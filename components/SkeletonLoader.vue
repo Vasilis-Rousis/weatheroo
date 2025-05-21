@@ -76,7 +76,7 @@
         </CardHeader>
         <CardContent class="text-center py-2">
           <div
-            class="h-16 w-16 bg-gray-200 dark:bg-gray-700 rounded-full mx-auto my-8 animate-pulse"
+            class="h-16 w-16 bg-gray-200 dark:bg-gray-700 rounded-full mx-auto my-11 animate-pulse"
           />
           <div
             class="h-8 w-16 bg-gray-200 dark:bg-gray-700 rounded-md mb-1 mx-auto animate-pulse"
