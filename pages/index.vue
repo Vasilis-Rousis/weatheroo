@@ -107,16 +107,18 @@
           <div v-else>
             <!-- Current Weather Card -->
             <Card
-              class="mb-8 overflow-hidden border-none shadow-lg transform transition-all duration-300 hover:shadow-xl opacity-95"
+              class="mb-8 overflow-hidden border-none shadow-lg transition-all duration-300 hover:shadow-xl opacity-95 weather-main-card"
             >
               <div
-                class="bg-gradient-to-r from-blue-400 to-blue-600 dark:from-blue-600 dark:to-blue-800 p-6 text-white relative"
+                class="bg-gradient-to-r from-blue-400 to-blue-600 dark:from-blue-600 dark:to-blue-800 p-6 text-white relative weather-card-header"
               >
                 <div
                   class="flex flex-col md:flex-row justify-between items-center"
                 >
-                  <div>
-                    <h2 class="text-3xl font-bold mb-1 flex items-center gap-2">
+                  <div class="weather-location-info">
+                    <h2
+                      class="text-3xl font-bold mb-1 flex items-center gap-2 weather-city"
+                    >
                       {{ currentWeather.name }},
                       {{ currentWeather.sys?.country }}
                       <MapPinIcon
@@ -124,13 +126,20 @@
                         class="h-5 w-5 inline-block"
                       />
                     </h2>
-                    <p class="text-lg opacity-90">{{ formattedDate }}</p>
-                    <p v-if="cityLocalTime" class="text-md opacity-80">
+                    <p class="text-lg opacity-90 weather-date">
+                      {{ formattedDate }}
+                    </p>
+                    <p
+                      v-if="cityLocalTime"
+                      class="text-md opacity-80 weather-time"
+                    >
                       {{ formattedLocalTime }} ({{ timezoneString }})
                     </p>
                   </div>
 
-                  <div class="flex items-center mt-4 md:mt-0">
+                  <div
+                    class="flex items-center mt-4 md:mt-0 weather-current-display"
+                  >
                     <WeatherIcons
                       v-if="currentWeather.weather?.[0]?.icon"
                       :weather-code="currentWeather.weather[0].icon"
@@ -138,10 +147,10 @@
                       class="weather-icon"
                     />
                     <div class="text-center">
-                      <h3 class="text-5xl font-bold">
+                      <h3 class="text-5xl font-bold weather-temp">
                         {{ Math.round(currentWeather.main?.temp) }}°C
                       </h3>
-                      <p class="text-xl capitalize">
+                      <p class="text-xl capitalize weather-desc">
                         {{ currentWeather.weather?.[0]?.description }}
                       </p>
                     </div>
@@ -152,7 +161,7 @@
               <CardContent class="p-6">
                 <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
                   <div
-                    class="text-center p-3 rounded-lg bg-gray-50 dark:bg-gray-800 transform transition duration-300 hover:scale-105"
+                    class="text-center p-3 rounded-lg bg-gray-50 dark:bg-gray-800 transition duration-300 hover:scale-105 weather-stat-item weather-stat-0"
                   >
                     <ThermometerIcon
                       class="h-6 w-6 mx-auto mb-2 text-yellow-500"
@@ -166,7 +175,7 @@
                   </div>
 
                   <div
-                    class="text-center p-3 rounded-lg bg-gray-50 dark:bg-gray-800 transform transition duration-300 hover:scale-105"
+                    class="text-center p-3 rounded-lg bg-gray-50 dark:bg-gray-800 transition duration-300 hover:scale-105 weather-stat-item weather-stat-1"
                   >
                     <DropletIcon class="h-6 w-6 mx-auto mb-2 text-blue-500" />
                     <p class="text-sm text-gray-500 dark:text-gray-400">
@@ -178,7 +187,7 @@
                   </div>
 
                   <div
-                    class="text-center p-3 rounded-lg bg-gray-50 dark:bg-gray-800 transform transition duration-300 hover:scale-105"
+                    class="text-center p-3 rounded-lg bg-gray-50 dark:bg-gray-800 transition duration-300 hover:scale-105 weather-stat-item weather-stat-2"
                   >
                     <WindIcon class="h-6 w-6 mx-auto mb-2 text-gray-500" />
                     <p class="text-sm text-gray-500 dark:text-gray-400">
@@ -190,7 +199,7 @@
                   </div>
 
                   <div
-                    class="text-center p-3 rounded-lg bg-gray-50 dark:bg-gray-800 transform transition duration-300 hover:scale-105"
+                    class="text-center p-3 rounded-lg bg-gray-50 dark:bg-gray-800 transition duration-300 hover:scale-105 weather-stat-item weather-stat-3"
                   >
                     <CloudIcon class="h-6 w-6 mx-auto mb-2 text-gray-400" />
                     <p class="text-sm text-gray-500 dark:text-gray-400">
@@ -210,7 +219,7 @@
               <Card
                 v-for="(forecastDay, index) in dailyForecasts"
                 :key="index"
-                class="border-none shadow-md forecast-card transition-all duration-300 transform hover:shadow-lg hover:scale-105"
+                class="border-none shadow-md forecast-card transition-all duration-300 hover:shadow-lg hover:scale-105"
               >
                 <CardHeader class="pb-2">
                   <CardTitle class="text-lg">{{
@@ -506,7 +515,7 @@ const searchCity = async () => {
     // Slightly delay hiding the skeleton for smoother transition
     setTimeout(() => {
       loading.value = false;
-    }, 300);
+    }, 400);
   } catch (err) {
     error.value = "Failed to fetch weather data. Please try again.";
     console.error(err);
@@ -516,7 +525,7 @@ const searchCity = async () => {
 
     setTimeout(() => {
       loading.value = false;
-    }, 300);
+    }, 400);
   }
 };
 
@@ -566,7 +575,7 @@ const handleLocationRequest = async () => {
       // Slightly delay hiding the skeleton for smoother transition
       setTimeout(() => {
         loading.value = false;
-      }, 300);
+      }, 400);
     }
   } catch (err) {
     console.error("Error getting location:", err);
@@ -645,7 +654,7 @@ watch(coordinates, async (newCoords) => {
     // Slightly delay hiding the skeleton for smoother transition
     setTimeout(() => {
       loading.value = false;
-    }, 300);
+    }, 400);
   }
 });
 
@@ -862,11 +871,9 @@ onUnmounted(() => {
 @keyframes fadeIn {
   from {
     opacity: 0;
-    transform: translateY(10px);
   }
   to {
     opacity: 1;
-    transform: translateY(0);
   }
 }
 
@@ -877,8 +884,7 @@ onUnmounted(() => {
 /* Header animation styles */
 .header-element {
   opacity: 0;
-  transform: translateY(-15px);
-  animation: fadeInTopDown 0.6s ease-out forwards;
+  animation: fadeInHeader 0.6s ease-out forwards;
 }
 
 /* For mobile (vertical layout) - top to bottom sequence */
@@ -902,14 +908,12 @@ onUnmounted(() => {
   animation-delay: 300ms;
 }
 
-@keyframes fadeInTopDown {
+@keyframes fadeInHeader {
   from {
     opacity: 0;
-    transform: translateY(-15px);
   }
   to {
     opacity: 1;
-    transform: translateY(0);
   }
 }
 
@@ -933,7 +937,7 @@ main {
 /* Apply separate entrance animations to weather content items */
 .forecast-card {
   opacity: 0;
-  animation: fadeInUp 0.6s forwards;
+  animation: simpleFadeIn 0.6s forwards;
 }
 
 .forecast-card:nth-child(1) {
@@ -952,14 +956,12 @@ main {
   animation-delay: 300ms;
 }
 
-@keyframes fadeInUp {
+@keyframes simpleFadeIn {
   from {
     opacity: 0;
-    transform: translateY(20px);
   }
   to {
     opacity: 1;
-    transform: translateY(0);
   }
 }
 
@@ -972,5 +974,72 @@ main {
 .fade-enter-from,
 .fade-leave-to {
   opacity: 0;
+}
+
+/* Weather card entrance animations - Simple fade in only */
+.weather-main-card {
+  animation: simpleFadeIn 0.5s ease-out forwards;
+  opacity: 0;
+}
+
+.weather-card-header {
+  animation: simpleFadeIn 0.6s ease-out forwards;
+  opacity: 0;
+}
+
+.weather-location-info {
+  animation: simpleFadeIn 0.7s ease-out forwards;
+  opacity: 0;
+}
+
+.weather-city {
+  animation: simpleFadeIn 0.6s ease-out 100ms forwards;
+  opacity: 0;
+}
+
+.weather-date {
+  animation: simpleFadeIn 0.6s ease-out 150ms forwards;
+  opacity: 0;
+}
+
+.weather-time {
+  animation: simpleFadeIn 0.6s ease-out 200ms forwards;
+  opacity: 0;
+}
+
+.weather-current-display {
+  animation: simpleFadeIn 0.7s ease-out forwards;
+  opacity: 0;
+}
+
+.weather-temp {
+  animation: simpleFadeIn 0.8s ease-out 250ms forwards;
+  opacity: 0;
+}
+
+.weather-desc {
+  animation: simpleFadeIn 0.8s ease-out 300ms forwards;
+  opacity: 0;
+}
+
+.weather-stat-item {
+  animation: simpleFadeIn 0.6s ease-out forwards;
+  opacity: 0;
+}
+
+.weather-stat-0 {
+  animation-delay: 200ms;
+}
+
+.weather-stat-1 {
+  animation-delay: 250ms;
+}
+
+.weather-stat-2 {
+  animation-delay: 300ms;
+}
+
+.weather-stat-3 {
+  animation-delay: 350ms;
 }
 </style>
