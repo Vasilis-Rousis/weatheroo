@@ -1,19 +1,113 @@
 // composables/useWeatherService.ts
 import { ref } from "vue";
 
+// Weather data interfaces
+interface WeatherMain {
+  temp: number;
+  feels_like: number;
+  temp_min: number;
+  temp_max: number;
+  pressure: number;
+  humidity: number;
+}
+
+interface WeatherWind {
+  speed: number;
+  deg: number;
+}
+
+interface WeatherClouds {
+  all: number;
+}
+
+interface WeatherSys {
+  country: string;
+  sunrise: number;
+  sunset: number;
+}
+
+interface WeatherInfo {
+  id: number;
+  main: string;
+  description: string;
+  icon: string;
+}
+
+interface CurrentWeather {
+  coord: { lon: number; lat: number };
+  weather: WeatherInfo[];
+  main: WeatherMain;
+  visibility: number;
+  wind: WeatherWind;
+  clouds: WeatherClouds;
+  dt: number;
+  sys: WeatherSys;
+  timezone: number;
+  id: number;
+  name: string;
+  cod: number | string;
+}
+
+interface ForecastItem {
+  dt: number;
+  main: WeatherMain;
+  weather: WeatherInfo[];
+  clouds: WeatherClouds;
+  wind: WeatherWind;
+  visibility: number;
+  pop: number;
+  dt_txt: string;
+}
+
+interface Forecast {
+  list: ForecastItem[];
+  city: {
+    id: number;
+    name: string;
+    coord: { lat: number; lon: number };
+    country: string;
+    timezone: number;
+  };
+}
+
 interface WeatherCache {
-  current: any;
-  forecast: any;
+  current: CurrentWeather;
+  forecast: Forecast;
   timestamp: number;
   cachedAt?: string;
 }
 
+interface ApiResponse {
+  current?: CurrentWeather;
+  forecast?: Forecast;
+  error?: string;
+  cached?: boolean;
+  cachedAt?: string;
+  notice?: string;
+  timestamp?: string;
+  retryAfter?: number;
+}
+
+interface WeatherResult {
+  current?: CurrentWeather;
+  forecast?: Forecast;
+  error?: string;
+  cached?: boolean;
+  cachedAt?: string;
+  notice?: string;
+}
+
+interface CacheInfo {
+  isCached: boolean;
+  timestamp: string | null;
+}
+
 export function useWeatherService() {
-  const currentWeather = ref<any>({});
-  const forecast = ref<any>({});
+  const currentWeather = ref<Partial<CurrentWeather>>({});
+  const forecast = ref<Partial<Forecast>>({});
   const loading = ref(false);
   const error = ref<string | null>(null);
-  const cacheInfo = ref<{ isCached: boolean; timestamp: string | null }>({
+  const cacheInfo = ref<CacheInfo>({
     isCached: false,
     timestamp: null,
   });
@@ -45,14 +139,16 @@ export function useWeatherService() {
   };
 
   // Helper to set cached weather data
-  const setCachedWeather = (key: string, data: any) => {
+  const setCachedWeather = (key: string, data: WeatherResult) => {
     // Skip cache in SSR mode
     if (typeof window === "undefined") return;
 
     try {
       const cacheData: WeatherCache = {
-        ...data,
+        current: data.current as CurrentWeather,
+        forecast: data.forecast as Forecast,
         timestamp: Date.now(),
+        cachedAt: data.cachedAt,
       };
 
       localStorage.setItem(`weatheroo-cache-${key}`, JSON.stringify(cacheData));
@@ -62,7 +158,7 @@ export function useWeatherService() {
   };
 
   // Get weather by city name
-  const getWeatherByCity = async (city: string) => {
+  const getWeatherByCity = async (city: string): Promise<WeatherResult> => {
     if (!city.trim()) return { error: "City name is required" };
 
     loading.value = true;
@@ -99,15 +195,19 @@ export function useWeatherService() {
 
       if (!response.ok) {
         if (response.status === 429) {
-          const data = await response.json();
-          error.value = `Rate limit exceeded. Please try again later. (${data.retryAfter}s)`;
-          return { error: error.value };
+          const responseData = (await response.json()) as {
+            data?: { retryAfter?: number };
+          };
+          const retryAfter = responseData?.data?.retryAfter || "";
+          const errorMsg = `Rate limit exceeded. Please try again later. (${retryAfter}s)`;
+          error.value = errorMsg;
+          return { error: errorMsg };
         }
         error.value = "Failed to fetch weather data. Please try again.";
         return { error: error.value };
       }
 
-      const data = await response.json();
+      const data = (await response.json()) as ApiResponse;
 
       if (data.error) {
         error.value = "City not found. Please try another location.";
@@ -120,15 +220,10 @@ export function useWeatherService() {
         };
 
         // Store the response in client cache
-        setCachedWeather(cacheKey, {
-          current: data.current,
-          forecast: data.forecast,
-          timestamp: Date.now(),
-          cachedAt: data.cachedAt || data.timestamp,
-        });
+        setCachedWeather(cacheKey, data);
 
-        currentWeather.value = data.current;
-        forecast.value = data.forecast;
+        currentWeather.value = data.current as CurrentWeather;
+        forecast.value = data.forecast as Forecast;
         return {
           current: data.current,
           forecast: data.forecast,
@@ -138,16 +233,20 @@ export function useWeatherService() {
         };
       }
     } catch (err) {
-      error.value = "Failed to fetch weather data. Please try again.";
+      const errorMsg = "Failed to fetch weather data. Please try again.";
+      error.value = errorMsg;
       console.error(err);
-      return { error: error.value };
+      return { error: errorMsg };
     } finally {
       loading.value = false;
     }
   };
 
   // Get weather by coordinates
-  const getWeatherByCoords = async (lat: number, lon: number) => {
+  const getWeatherByCoords = async (
+    lat: number,
+    lon: number
+  ): Promise<WeatherResult> => {
     loading.value = true;
     error.value = null;
 
@@ -182,15 +281,19 @@ export function useWeatherService() {
 
       if (!response.ok) {
         if (response.status === 429) {
-          const data = await response.json();
-          error.value = `Rate limit exceeded. Please try again later. (${data.retryAfter}s)`;
-          return { error: error.value };
+          const responseData = (await response.json()) as {
+            data?: { retryAfter?: number };
+          };
+          const retryAfter = responseData?.data?.retryAfter || "";
+          const errorMsg = `Rate limit exceeded. Please try again later. (${retryAfter}s)`;
+          error.value = errorMsg;
+          return { error: errorMsg };
         }
         error.value = "Failed to fetch weather data. Please try again.";
         return { error: error.value };
       }
 
-      const data = await response.json();
+      const data = (await response.json()) as ApiResponse;
 
       if (data.error) {
         error.value = "Location not found. Please try again.";
@@ -203,15 +306,10 @@ export function useWeatherService() {
         };
 
         // Store in cache
-        setCachedWeather(cacheKey, {
-          current: data.current,
-          forecast: data.forecast,
-          timestamp: Date.now(),
-          cachedAt: data.cachedAt || data.timestamp,
-        });
+        setCachedWeather(cacheKey, data);
 
-        currentWeather.value = data.current;
-        forecast.value = data.forecast;
+        currentWeather.value = data.current as CurrentWeather;
+        forecast.value = data.forecast as Forecast;
         return {
           current: data.current,
           forecast: data.forecast,
@@ -221,9 +319,10 @@ export function useWeatherService() {
         };
       }
     } catch (err) {
-      error.value = "Failed to fetch weather data. Please try again.";
+      const errorMsg = "Failed to fetch weather data. Please try again.";
+      error.value = errorMsg;
       console.error(err);
-      return { error: error.value };
+      return { error: errorMsg };
     } finally {
       loading.value = false;
     }
