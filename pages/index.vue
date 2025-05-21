@@ -491,6 +491,8 @@ const searchCity = async () => {
       // Update location state
       locationEnabled.value = false;
 
+      // IMPORTANT: When a user explicitly searches for a city,
+      // we should mark location as denied to prevent auto-enabling
       denyLocationPermission();
 
       // Update the timezone offset and restart the clock
@@ -530,6 +532,13 @@ const searchCity = async () => {
 // Handle location request
 const handleLocationRequest = async () => {
   try {
+    // Update preferences to enable location and remove any denied status
+    enableLocationPermission();
+
+    // Manually set location as enabled for immediate UI update
+    locationEnabled.value = true;
+
+    // Now request the location
     const position = await requestLocation();
 
     if (position) {
@@ -545,6 +554,11 @@ const handleLocationRequest = async () => {
 
       if (result.error) {
         error.value = result.error;
+
+        // If there was an error getting weather, revert location enabled state
+        locationEnabled.value = false;
+        disableLocationPermission();
+        denyLocationPermission();
       } else {
         currentWeather.value = result.current;
         forecast.value = result.forecast;
@@ -559,9 +573,6 @@ const handleLocationRequest = async () => {
 
         // Save the city in user preferences
         updateLastCity(result.current.name);
-
-        // Save location permission preference
-        enableLocationPermission();
       }
 
       // Mark data as loaded
@@ -574,11 +585,21 @@ const handleLocationRequest = async () => {
       setTimeout(() => {
         loading.value = false;
       }, 400);
+    } else {
+      // If we couldn't get position, revert location enabled state
+      locationEnabled.value = false;
+      disableLocationPermission();
+      denyLocationPermission();
     }
   } catch (err) {
     console.error("Error getting location:", err);
 
-    // If there was an error, still update loading states
+    // If there was an error, revert location enabled state
+    locationEnabled.value = false;
+    disableLocationPermission();
+    denyLocationPermission();
+
+    // Still update loading states
     loadingFinished.value = true;
     loading.value = false;
   }
@@ -807,7 +828,9 @@ onMounted(async () => {
         }, 1500);
       }
     }
-    
+
+    // Fall back to London as the default city if everything else fails
+    // And make sure location UI shows as disabled
     locationEnabled.value = false;
 
     const result = await getWeatherByCity("London");

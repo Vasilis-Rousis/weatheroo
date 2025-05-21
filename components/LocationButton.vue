@@ -27,9 +27,13 @@ const showDisabledMessage = ref(false);
 // Watch for changes in isEnabled to control message visibility
 watch(
   () => props.isEnabled,
-  (newValue) => {
-    if (newValue) {
-      // Show the enabled message
+  (newValue, oldValue) => {
+    // Only show messages when there's an actual change in state
+    // and not just on initial component mounting
+    const isInitialMount = oldValue === undefined;
+
+    if (newValue && !isInitialMount) {
+      // Show the enabled message when isEnabled changes to true
       showEnabledMessage.value = true;
       showDisabledMessage.value = false;
 
@@ -37,17 +41,15 @@ watch(
       setTimeout(() => {
         showEnabledMessage.value = false;
       }, 2000);
-    } else {
+    } else if (!newValue && oldValue === true) {
       // Only show disabled message if it was previously enabled
-      if (showEnabledMessage.value) {
-        showDisabledMessage.value = true;
-        showEnabledMessage.value = false;
+      showDisabledMessage.value = true;
+      showEnabledMessage.value = false;
 
-        // Set a timer to hide the message after 2 seconds
-        setTimeout(() => {
-          showDisabledMessage.value = false;
-        }, 2000);
-      }
+      // Set a timer to hide the message after 2 seconds
+      setTimeout(() => {
+        showDisabledMessage.value = false;
+      }, 2000);
     }
   },
   { immediate: true }

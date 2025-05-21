@@ -42,7 +42,7 @@ export function useUserPreferences() {
   // Function to mark location permission as enabled
   const enableLocationPermission = () => {
     locationPermissionEnabled.value = true;
-    locationPermissionDenied.value = false;
+    locationPermissionDenied.value = false; // Make sure to clear the denied status
   };
 
   // Function to disable location permission that was previously enabled
