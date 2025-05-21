@@ -1,7 +1,11 @@
 // composables/useLocationService.ts
 import { ref, onMounted } from "vue";
+import { useUserPreferences } from "./useUserPreferences";
 
 export function useLocationService() {
+  const { locationPermissionEnabled, locationPermissionDenied } =
+    useUserPreferences();
+
   const locationPermission = ref<PermissionState | null>(null);
   const locationEnabled = ref(false);
   const locationLoading = ref(false);
@@ -34,7 +38,11 @@ export function useLocationService() {
           locationPermission.value = permissionStatus.state;
 
           // If the permission is granted, try to get the position
-          if (permissionStatus.state === "granted") {
+          // BUT ONLY if the user hasn't explicitly disabled location in app settings
+          if (
+            permissionStatus.state === "granted" &&
+            !locationPermissionDenied.value
+          ) {
             getPosition();
           } else {
             locationEnabled.value = false;
@@ -63,7 +71,12 @@ export function useLocationService() {
           (position) => {
             const { latitude, longitude } = position.coords;
             coordinates.value = { latitude, longitude };
-            locationEnabled.value = true;
+
+            // Only set location as enabled if it's not explicitly denied in preferences
+            if (!locationPermissionDenied.value) {
+              locationEnabled.value = true;
+            }
+
             locationLoading.value = false;
             resolve({ latitude, longitude });
           },
@@ -118,10 +131,19 @@ export function useLocationService() {
 
   // Initialize on mount
   onMounted(async () => {
+    // Synchronize the locationEnabled state with the user preferences
+    locationEnabled.value =
+      locationPermissionEnabled.value && !locationPermissionDenied.value;
+
     const isGranted = await checkPermissionStatus();
 
-    // If permission is already granted, get the position
-    if (isGranted) {
+    // If permission is already granted and not explicitly denied in preferences,
+    // get the position
+    if (
+      isGranted &&
+      !locationPermissionDenied.value &&
+      locationPermissionEnabled.value
+    ) {
       try {
         await getPosition();
       } catch (error) {

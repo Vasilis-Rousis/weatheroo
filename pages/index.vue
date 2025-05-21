@@ -349,6 +349,7 @@ const {
   updateLastCity,
   enableLocationPermission,
   disableLocationPermission,
+  denyLocationPermission,
 } = useUserPreferences();
 
 // Use Nuxt's color mode composable
@@ -490,6 +491,8 @@ const searchCity = async () => {
       // Update location state
       locationEnabled.value = false;
 
+      denyLocationPermission();
+
       // Update the timezone offset and restart the clock
       if (result.current && result.current.timezone !== undefined) {
         timezoneOffsetSeconds.value = result.current.timezone;
@@ -586,8 +589,11 @@ const handleLocationDisable = () => {
   // Update local state to disable location and clear coordinates
   clearCoordinates();
 
-  // Update user preferences to disable location
+  // Update user preferences to EXPLICITLY disable location
   disableLocationPermission();
+
+  // Also mark as denied to prevent auto-enabling on refresh
+  denyLocationPermission();
 
   // If we have a last city, load it
   if (lastCity.value) {
@@ -611,7 +617,8 @@ const handleLocationDecline = () => {
 
 // Watch for changes in the coordinates to update weather
 watch(coordinates, async (newCoords) => {
-  if (newCoords) {
+  // Only process coordinate changes if location permission is explicitly enabled
+  if (newCoords && locationPermissionEnabled.value) {
     // Reset states
     loading.value = true;
     loadingFinished.value = false;
@@ -684,14 +691,49 @@ watch(
 
 // Initialize app on page load
 onMounted(async () => {
-
   try {
     loading.value = true;
     loadingFinished.value = false;
 
-    // First, check if location is enabled in preferences and coordinates are available
-    if (locationPermissionEnabled.value && "geolocation" in navigator) {
+    // Change the priority order:
+    // 1. First, check if location is EXPLICITLY DISABLED in the app preferences
+    if (locationPermissionDenied.value) {
+      // Make sure location UI state reflects this
+      locationEnabled.value = false;
+
+      // If location is explicitly disabled by the user, load the last city or default
+      if (lastCity.value) {
+        searchQuery.value = lastCity.value;
+        const result = await getWeatherByCity(lastCity.value);
+
+        if (!result.error) {
+          currentWeather.value = result.current;
+          forecast.value = result.forecast;
+
+          // Initialize timezone info
+          if (result.current && result.current.timezone !== undefined) {
+            timezoneOffsetSeconds.value = result.current.timezone;
+            updateTimezoneString();
+            startClock();
+          }
+
+          // Mark data as loaded
+          loadingFinished.value = true;
+          setTimeout(() => {
+            loading.value = false;
+          }, 800);
+          return; // Exit early
+        }
+      }
+      // Fall through to default city if last city failed
+    }
+
+    // 2. Check if location is EXPLICITLY ENABLED in preferences
+    else if (locationPermissionEnabled.value && "geolocation" in navigator) {
       try {
+        // Make sure location UI state reflects this
+        locationEnabled.value = true;
+
         const position = await requestLocation();
         if (position) {
           const result = await getWeatherByCoords(
@@ -713,11 +755,6 @@ onMounted(async () => {
 
             // Mark data as loaded and complete the loading transition
             loadingFinished.value = true;
-
-            // Wait for content to be rendered
-            await nextTick();
-
-            // Slightly delay hiding the skeleton for smoother transition
             setTimeout(() => {
               loading.value = false;
             }, 800);
@@ -729,8 +766,11 @@ onMounted(async () => {
       }
     }
 
-    // Second, check if we have a saved city to load
+    // 3. If no explicit location preference, check if we have a saved city to load
     if (lastCity.value) {
+      // If we're loading a saved city and not using location, make sure the UI reflects this
+      locationEnabled.value = false;
+
       searchQuery.value = lastCity.value;
       const result = await getWeatherByCity(lastCity.value);
 
@@ -745,64 +785,31 @@ onMounted(async () => {
           startClock();
         }
 
-        // Mark data as loaded and complete the loading transition
+        // Mark data as loaded
         loadingFinished.value = true;
-
-        // Wait for content to be rendered
-        await nextTick();
-
-        // Slightly delay hiding the skeleton for smoother transition
         setTimeout(() => {
           loading.value = false;
         }, 800);
-        return; // Exit early if we successfully loaded the last city
+        return; // Exit early
       }
     }
 
-    // If we don't have a saved city or it failed to load, try geolocation if available
-    if ("geolocation" in navigator && !locationPermissionDenied.value) {
-      // Check if the location prompt has been shown before
+    // 4. Only prompt for location if no previous preferences exist
+    if (
+      "geolocation" in navigator &&
+      !locationPermissionDenied.value &&
+      !locationPermissionEnabled.value
+    ) {
+      // Only show the location dialog if it hasn't been shown before
       if (!locationPromptShown.value) {
-        // Show the location permission dialog after a short delay
         setTimeout(() => {
           showLocationDialog.value = true;
         }, 1500);
       }
-      // If prompt was shown and location is enabled, use it
-      else if (coordinates.value) {
-        const result = await getWeatherByCoords(
-          coordinates.value.latitude,
-          coordinates.value.longitude
-        );
-
-        if (!result.error) {
-          currentWeather.value = result.current;
-          forecast.value = result.forecast;
-          searchQuery.value = result.current.name;
-          updateLastCity(result.current.name);
-
-          if (result.current && result.current.timezone !== undefined) {
-            timezoneOffsetSeconds.value = result.current.timezone;
-            updateTimezoneString();
-            startClock();
-          }
-
-          // Mark data as loaded and complete the loading transition
-          loadingFinished.value = true;
-
-          // Wait for content to be rendered
-          await nextTick();
-
-          // Slightly delay hiding the skeleton for smoother transition
-          setTimeout(() => {
-            loading.value = false;
-          }, 800);
-          return; // Exit early if geolocation worked
-        }
-      }
     }
+    
+    locationEnabled.value = false;
 
-    // Fall back to London as the default city if everything else fails
     const result = await getWeatherByCity("London");
 
     if (!result.error) {
@@ -829,7 +836,7 @@ onMounted(async () => {
     // Mark as loaded to show the error state
     loadingFinished.value = true;
   } finally {
-    // Add a small delay to allow skeleton to be visible briefly for better UX
+    // Add a small delay for better UX
     setTimeout(() => {
       loading.value = false;
     }, 800);
