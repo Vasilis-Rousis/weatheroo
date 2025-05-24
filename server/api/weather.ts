@@ -4,6 +4,9 @@ import {
   CACHE_DURATION,
   isRateLimited,
   trackApiCall,
+  getCachedWeather,
+  setCachedWeather,
+  getUsageStats,
 } from "./utils/rateLimit";
 
 export default defineEventHandler(async (event) => {
