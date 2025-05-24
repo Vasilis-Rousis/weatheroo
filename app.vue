@@ -1,9 +1,14 @@
 <!-- app.vue -->
 <template>
   <div>
+    <Analytics />
     <NuxtPage />
   </div>
 </template>
+
+<script setup lang="ts">
+import { Analytics } from "@vercel/analytics/nuxt";
+</script>
 
 <style>
 /* Global styles */
