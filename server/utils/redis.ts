@@ -1,8 +1,13 @@
 // server/utils/redis.ts
 import { Redis } from "@upstash/redis";
 
-// Initialize Redis using environment variables (automatically uses Vercel's env vars)
-const redis = Redis.fromEnv();
+// Initialize Redis using Vercel's environment variables
+// Vercel provides KV_REST_API_URL and KV_REST_API_TOKEN, but Upstash SDK expects UPSTASH_REDIS_REST_URL and UPSTASH_REDIS_REST_TOKEN
+const redis = new Redis({
+  url: process.env.KV_REST_API_URL || process.env.UPSTASH_REDIS_REST_URL || "",
+  token:
+    process.env.KV_REST_API_TOKEN || process.env.UPSTASH_REDIS_REST_TOKEN || "",
+});
 
 // Helper for setting values with expiry
 export async function setWithExpiry(
@@ -120,6 +125,20 @@ export async function getTTL(key: string) {
 // Test Redis connection
 export async function testRedisConnection() {
   try {
+    // Check if environment variables are available
+    const url =
+      process.env.KV_REST_API_URL || process.env.UPSTASH_REDIS_REST_URL;
+    const token =
+      process.env.KV_REST_API_TOKEN || process.env.UPSTASH_REDIS_REST_TOKEN;
+
+    if (!url || !token) {
+      return {
+        connected: false,
+        error:
+          "Missing Redis configuration - URL or token not found in environment variables",
+      };
+    }
+
     const testKey = `test:${Date.now()}`;
     const testValue = { timestamp: Date.now(), test: true };
 
