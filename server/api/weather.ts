@@ -1,11 +1,12 @@
 // server/api/weather.ts
 import { defineEventHandler, getQuery, createError } from "h3";
 import {
-  cache,
   CACHE_DURATION,
   isRateLimited,
   trackApiCall,
-  rateLimit,
+  getCachedWeather,
+  setCachedWeather,
+  getUsageStats,
 } from "./utils/rateLimit";
 
 export default defineEventHandler(async (event) => {
@@ -21,8 +22,8 @@ export default defineEventHandler(async (event) => {
     : `coords:${parseFloat(lat).toFixed(2)},${parseFloat(lon).toFixed(2)}`;
 
   // Check cache first
-  const cachedData = cache.get(cacheKey);
-  if (cachedData && Date.now() - cachedData.timestamp < CACHE_DURATION) {
+  const cachedData = await getCachedWeather(cacheKey);
+  if (cachedData && Date.now() - cachedData.timestamp < CACHE_DURATION * 1000) {
     console.log(`[Weather API] Cache hit for ${cacheKey}`);
     return {
       ...cachedData.data,
@@ -32,7 +33,7 @@ export default defineEventHandler(async (event) => {
   }
 
   // Check if we're rate limited
-  if (isRateLimited()) {
+  if (await isRateLimited()) {
     console.warn(
       `[Weather API] Rate limit exceeded - returning cached data if available`
     );
@@ -47,12 +48,18 @@ export default defineEventHandler(async (event) => {
       };
     }
 
-    return createError({
+    // Get current usage stats for message
+    const stats = await getUsageStats();
+    const resetSeconds = Math.ceil(
+      (new Date(stats.currentPeriod.resetTime).getTime() - Date.now()) / 1000
+    );
+
+    throw createError({
       statusCode: 429,
       statusMessage: "Too Many Requests",
       data: {
         error: "API rate limit reached. Please try again later.",
-        retryAfter: Math.ceil((rateLimit.resetTime - Date.now()) / 1000),
+        retryAfter: resetSeconds,
       },
     });
   }
@@ -60,6 +67,16 @@ export default defineEventHandler(async (event) => {
   // Get API key from environment variable
   const config = useRuntimeConfig();
   const apiKey = config.openWeatherApiKey;
+
+  if (!apiKey) {
+    throw createError({
+      statusCode: 503,
+      statusMessage: "Service Unavailable",
+      data: {
+        error: "Weather service configuration error. Please try again later.",
+      },
+    });
+  }
 
   let currentUrl;
   let forecastUrl;
@@ -71,10 +88,14 @@ export default defineEventHandler(async (event) => {
     forecastUrl = `https://api.openweathermap.org/data/2.5/forecast?lat=${lat}&lon=${lon}&appid=${apiKey}&units=metric`;
   } else if (city) {
     // Use city name for the API call
-    currentUrl = `https://api.openweathermap.org/data/2.5/weather?q=${city}&appid=${apiKey}&units=metric`;
-    forecastUrl = `https://api.openweathermap.org/data/2.5/forecast?q=${city}&appid=${apiKey}&units=metric`;
+    currentUrl = `https://api.openweathermap.org/data/2.5/weather?q=${encodeURIComponent(
+      city
+    )}&appid=${apiKey}&units=metric`;
+    forecastUrl = `https://api.openweathermap.org/data/2.5/forecast?q=${encodeURIComponent(
+      city
+    )}&appid=${apiKey}&units=metric`;
   } else {
-    return createError({
+    throw createError({
       statusCode: 400,
       statusMessage: "Bad Request",
       data: {
@@ -86,7 +107,7 @@ export default defineEventHandler(async (event) => {
 
   try {
     // Track this API call
-    trackApiCall();
+    await trackApiCall();
 
     // Fetch current weather
     const currentResponse = await fetch(currentUrl);
@@ -98,8 +119,22 @@ export default defineEventHandler(async (event) => {
       };
     }
 
+    // If we get an error from OpenWeatherMap related to the API key
+    if (currentData.cod === 401 || currentData.cod === "401") {
+      console.error("[Weather API] API key error:", currentData.message);
+
+      throw createError({
+        statusCode: 503,
+        statusMessage: "Service Unavailable",
+        data: {
+          error:
+            "Weather API service temporarily unavailable. Please check your API key.",
+        },
+      });
+    }
+
     // Track this API call too
-    trackApiCall();
+    await trackApiCall();
 
     // Fetch forecast
     const forecastResponse = await fetch(forecastUrl);
@@ -113,22 +148,25 @@ export default defineEventHandler(async (event) => {
     };
 
     // Store in cache
-    cache.set(cacheKey, {
-      data: responseData,
-      timestamp: Date.now(),
-    });
+    await setCachedWeather(cacheKey, responseData);
 
     // Log API call for monitoring
-    console.log(`[Weather API] New data fetched for ${cacheKey}.`);
+    console.log(`[Weather API] New data fetched for ${cacheKey}`);
 
     return responseData;
   } catch (error) {
     console.error("Error fetching weather data:", error);
-    return createError({
+
+    // If it's already an H3Error, rethrow it
+    if (error.statusCode) {
+      throw error;
+    }
+
+    throw createError({
       statusCode: 500,
       statusMessage: "Internal Server Error",
       data: {
-        error: "Failed to fetch weather data",
+        error: "Failed to fetch weather data. Please try again later.",
       },
     });
   }
