@@ -3,7 +3,7 @@
   <div>
     <h2 class="text-2xl font-bold mb-4">Weather Map</h2>
     <Card class="border-none shadow-md overflow-hidden">
-      <CardHeader class="pb-2">
+      <CardHeader class="pb-6">
         <div
           class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3"
         >
@@ -29,7 +29,7 @@
           <!-- Map Container -->
           <div
             ref="mapContainer"
-            class="w-full h-64 md:h-80 bg-gray-100 dark:bg-gray-800"
+            class="w-full map-container bg-gray-100 dark:bg-gray-800"
           />
 
           <!-- Loading Overlay -->
@@ -495,6 +495,29 @@ onUnmounted(() => {
 .custom-marker {
   background: transparent !important;
   border: none !important;
+}
+
+/* Map container responsive heights */
+.map-container {
+  height: 16rem; /* 256px - mobile default */
+}
+
+@media (min-width: 640px) {
+  .map-container {
+    height: 20rem; /* 320px - small screens and up */
+  }
+}
+
+@media (min-width: 768px) {
+  .map-container {
+    height: 24rem; /* 384px - medium screens and up */
+  }
+}
+
+@media (min-width: 1024px) {
+  .map-container {
+    height: 32rem; /* 448px - large screens and up */
+  }
 }
 
 /* Leaflet controls styling for dark mode */

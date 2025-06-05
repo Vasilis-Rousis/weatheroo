@@ -23,6 +23,7 @@
         <div
           class="flex flex-col md:flex-row md:items-center md:justify-between gap-4"
         >
+          <!-- Logo and Title -->
           <div class="flex items-center">
             <CloudIcon
               class="h-8 w-8 mr-2 text-blue-500 header-element header-logo"
@@ -31,10 +32,8 @@
               Weatheroo
             </h1>
           </div>
-
-          <div
-            class="w-full md:w-96 mr-20 relative header-element header-search"
-          >
+          <!-- Search and Location and Theme Toggle -->
+          <div class="w-full md:w-96 relative header-element header-search">
             <div class="flex gap-2 items-center">
               <div class="relative md:max-w-60 flex-1">
                 <Input
@@ -61,17 +60,7 @@
                 @disable-location="handleLocationDisable"
               />
             </div>
-
-            <!-- Location error message -->
-            <div
-              v-if="locationError && showLocationError"
-              class="absolute mt-1 text-xs text-red-500 transition-opacity duration-300"
-              :class="showLocationError ? 'animate-fadeIn' : 'animate-fadeOut'"
-            >
-              {{ locationError }}
-            </div>
           </div>
-
           <Button
             variant="outline"
             size="icon"
@@ -362,7 +351,6 @@ const loading = ref(true);
 const loadingFinished = ref(false);
 const error = ref(null);
 const showLocationDialog = ref(false);
-const showLocationError = ref(false);
 
 // Get user preferences
 const {
@@ -384,7 +372,6 @@ const isDark = computed(() => colorMode.value === "dark");
 const {
   locationEnabled,
   locationLoading,
-  locationError,
   coordinates,
   requestLocation,
   clearCoordinates,
@@ -712,23 +699,6 @@ watch(
       startClock();
     }
   }
-);
-
-// Watch for changes in the locationError value
-watch(
-  locationError,
-  (newValue) => {
-    if (newValue) {
-      // Show the error message
-      showLocationError.value = true;
-
-      // Set a timer to hide the message after 2 seconds
-      setTimeout(() => {
-        showLocationError.value = false;
-      }, 2000);
-    }
-  },
-  { immediate: true }
 );
 
 // Initialize app on page load
