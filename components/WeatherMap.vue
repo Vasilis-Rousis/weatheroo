@@ -243,16 +243,24 @@ const initMap = async () => {
     // Import Leaflet CSS
     await import("leaflet/dist/leaflet.css");
 
-    // Fix for default markers in webpack
-    delete L.Icon.Default.prototype._getIconUrl;
-    L.Icon.Default.mergeOptions({
-      iconRetinaUrl:
-        "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png",
-      iconUrl:
-        "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png",
-      shadowUrl:
-        "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png",
-    });
+    // Better fix for default markers in Nuxt/SSR
+    try {
+      if (L.Icon && L.Icon.Default && L.Icon.Default.prototype) {
+        delete L.Icon.Default.prototype._getIconUrl;
+
+        L.Icon.Default.mergeOptions({
+          iconRetinaUrl:
+            "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png",
+          iconUrl:
+            "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png",
+          shadowUrl:
+            "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png",
+        });
+      }
+    } catch (iconError) {
+      console.warn("Could not fix Leaflet default icons:", iconError);
+      // Continue anyway - we'll use custom icons
+    }
 
     // Create map
     map.value = L.map(mapContainer.value, {
@@ -299,7 +307,7 @@ const updateMarker = async () => {
       map.value.removeLayer(marker.value);
     }
 
-    // Create custom marker with city name
+    // Create custom marker using divIcon (more reliable than default markers)
     const customIcon = L.divIcon({
       html: `
           <div class="flex flex-col items-center pointer-events-none">
@@ -407,15 +415,22 @@ watch(
 // Initialize on mount
 onMounted(async () => {
   await nextTick();
-  if (mapContainer.value) {
-    initMap();
-  }
+  // Add a small delay to ensure DOM is ready
+  setTimeout(() => {
+    if (mapContainer.value) {
+      initMap();
+    }
+  }, 100);
 });
 
 // Cleanup on unmount
 onUnmounted(() => {
   if (map.value) {
-    map.value.remove();
+    try {
+      map.value.remove();
+    } catch (error) {
+      console.warn("Error removing map:", error);
+    }
   }
 });
 
@@ -423,7 +438,11 @@ onUnmounted(() => {
 const handleResize = () => {
   if (map.value) {
     setTimeout(() => {
-      map.value.invalidateSize();
+      try {
+        map.value.invalidateSize();
+      } catch (error) {
+        console.warn("Error invalidating map size:", error);
+      }
     }, 100);
   }
 };
