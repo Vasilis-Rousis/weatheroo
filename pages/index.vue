@@ -268,17 +268,35 @@
               class="mt-8 opacity-0 animate-fadeIn"
               style="animation-delay: 300ms; animation-fill-mode: forwards"
             >
-              <h2 class="text-2xl font-bold mb-4">Weather Map</h2>
-              <Card class="border-none shadow-md overflow-hidden h-64">
-                <div
-                  class="h-full w-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center"
-                >
-                  <p class="text-gray-500">
-                    Weather map will be displayed here
-                  </p>
-                  <!-- You can integrate a real map using libraries like Mapbox or Google Maps -->
-                </div>
-              </Card>
+              <ClientOnly>
+                <WeatherMap
+                  v-if="currentWeather?.coord"
+                  :latitude="currentWeather.coord.lat"
+                  :longitude="currentWeather.coord.lon"
+                  :city-name="currentWeather.name"
+                  :zoom="9"
+                />
+                <template #fallback>
+                  <!-- Fallback content while loading -->
+                  <div>
+                    <h2 class="text-2xl font-bold mb-4">Weather Map</h2>
+                    <Card
+                      class="border-none shadow-md overflow-hidden h-64 md:h-80"
+                    >
+                      <CardContent
+                        class="flex items-center justify-center h-full"
+                      >
+                        <div class="flex items-center gap-2">
+                          <div
+                            class="animate-spin h-5 w-5 border-2 border-blue-500 border-t-transparent rounded-full"
+                          />
+                          <span>Loading weather map...</span>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </div>
+                </template>
+              </ClientOnly>
             </div>
           </div>
         </div>
@@ -335,6 +353,7 @@ import SkeletonLoader from "~/components/SkeletonLoader.vue";
 import { useLocationService } from "~/composables/useLocationService";
 import { useWeatherService } from "~/composables/useWeatherService";
 import { useUserPreferences } from "~/composables/useUserPreferences";
+import WeatherMap from "~/components/WeatherMap.vue";
 
 const searchQuery = ref("");
 const currentWeather = ref({});
