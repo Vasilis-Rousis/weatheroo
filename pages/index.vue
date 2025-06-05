@@ -17,25 +17,24 @@
         @confirm="handleLocationRequest"
         @decline="handleLocationDecline"
       />
-
-      <!-- Header with Logo and Search -->
       <header class="mb-8">
-        <div
-          class="flex flex-col md:flex-row md:items-center md:justify-between gap-4"
-        >
-          <!-- Logo and Title -->
-          <div class="flex items-center">
+        <div class="flex flex-row items-center justify-between gap-2">
+          <!-- Logo and Title - Responsive -->
+          <div class="flex items-center flex-shrink-0">
             <CloudIcon
-              class="h-8 w-8 mr-2 text-blue-500 header-element header-logo"
+              class="h-6 w-6 sm:h-8 sm:w-8 mr-2 text-blue-500 header-element header-logo"
             />
-            <h1 class="text-3xl font-bold header-element header-title">
+            <h1
+              class="text-2xl sm:text-3xl font-bold header-element header-title"
+            >
               Weatheroo
             </h1>
           </div>
-          <!-- Search and Location and Theme Toggle -->
-          <div class="w-full md:w-96 relative header-element header-search">
+          <div
+            class="w-full md:w-96 relative header-element header-search min-w-0"
+          >
             <div class="flex gap-2 items-center">
-              <div class="relative md:max-w-60 flex-1">
+              <div class="relative md:max-w-60 flex-1 min-w-0">
                 <Input
                   v-model="searchQuery"
                   placeholder="Search city..."
@@ -55,7 +54,7 @@
               <LocationButton
                 :is-enabled="locationEnabled"
                 :is-loading="locationLoading"
-                class="header-element location-button"
+                class="header-element location-button flex-shrink-0"
                 @request-location="handleLocationRequest"
                 @disable-location="handleLocationDisable"
               />
@@ -64,7 +63,7 @@
           <Button
             variant="outline"
             size="icon"
-            class="header-element header-theme-toggle"
+            class="header-element header-theme-toggle flex-shrink-0 w-9 h-9"
             @click="toggleTheme"
           >
             <ClientOnly>
