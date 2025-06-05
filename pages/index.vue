@@ -17,26 +17,24 @@
         @confirm="handleLocationRequest"
         @decline="handleLocationDecline"
       />
-
-      <!-- Header with Logo and Search -->
       <header class="mb-8">
-        <div
-          class="flex flex-col md:flex-row md:items-center md:justify-between gap-4"
-        >
-          <div class="flex items-center">
+        <div class="flex flex-row items-center justify-between gap-2">
+          <!-- Logo and Title - Responsive (Logo only on mobile) -->
+          <div class="flex items-center flex-shrink-0">
             <CloudIcon
-              class="h-8 w-8 mr-2 text-blue-500 header-element header-logo"
+              class="h-16 w-16 sm:h-10 sm:w-10 mr-0 sm:mr-2 text-blue-500 header-element header-logo"
             />
-            <h1 class="text-3xl font-bold header-element header-title">
+            <h1
+              class="hidden sm:block text-2xl sm:text-3xl font-bold header-element header-title"
+            >
               Weatheroo
             </h1>
           </div>
-
           <div
-            class="w-full md:w-96 mr-20 relative header-element header-search"
+            class="w-full md:w-96 relative header-element header-search min-w-0"
           >
             <div class="flex gap-2 items-center">
-              <div class="relative md:max-w-60 flex-1">
+              <div class="relative md:max-w-60 flex-1 min-w-0">
                 <Input
                   v-model="searchQuery"
                   placeholder="Search city..."
@@ -56,26 +54,16 @@
               <LocationButton
                 :is-enabled="locationEnabled"
                 :is-loading="locationLoading"
-                class="header-element location-button"
+                class="header-element location-button flex-shrink-0"
                 @request-location="handleLocationRequest"
                 @disable-location="handleLocationDisable"
               />
             </div>
-
-            <!-- Location error message -->
-            <div
-              v-if="locationError && showLocationError"
-              class="absolute mt-1 text-xs text-red-500 transition-opacity duration-300"
-              :class="showLocationError ? 'animate-fadeIn' : 'animate-fadeOut'"
-            >
-              {{ locationError }}
-            </div>
           </div>
-
           <Button
             variant="outline"
             size="icon"
-            class="header-element header-theme-toggle"
+            class="header-element header-theme-toggle flex-shrink-0 w-9 h-9"
             @click="toggleTheme"
           >
             <ClientOnly>
@@ -268,17 +256,35 @@
               class="mt-8 opacity-0 animate-fadeIn"
               style="animation-delay: 300ms; animation-fill-mode: forwards"
             >
-              <h2 class="text-2xl font-bold mb-4">Weather Map</h2>
-              <Card class="border-none shadow-md overflow-hidden h-64">
-                <div
-                  class="h-full w-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center"
-                >
-                  <p class="text-gray-500">
-                    Weather map will be displayed here
-                  </p>
-                  <!-- You can integrate a real map using libraries like Mapbox or Google Maps -->
-                </div>
-              </Card>
+              <ClientOnly>
+                <WeatherMap
+                  v-if="currentWeather?.coord"
+                  :latitude="currentWeather.coord.lat"
+                  :longitude="currentWeather.coord.lon"
+                  :city-name="currentWeather.name"
+                  :zoom="9"
+                />
+                <template #fallback>
+                  <!-- Fallback content while loading -->
+                  <div>
+                    <h2 class="text-2xl font-bold mb-4">Weather Map</h2>
+                    <Card
+                      class="border-none shadow-md overflow-hidden h-64 md:h-80"
+                    >
+                      <CardContent
+                        class="flex items-center justify-center h-full"
+                      >
+                        <div class="flex items-center gap-2">
+                          <div
+                            class="animate-spin h-5 w-5 border-2 border-blue-500 border-t-transparent rounded-full"
+                          />
+                          <span>Loading weather map...</span>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </div>
+                </template>
+              </ClientOnly>
             </div>
           </div>
         </div>
@@ -335,6 +341,7 @@ import SkeletonLoader from "~/components/SkeletonLoader.vue";
 import { useLocationService } from "~/composables/useLocationService";
 import { useWeatherService } from "~/composables/useWeatherService";
 import { useUserPreferences } from "~/composables/useUserPreferences";
+import WeatherMap from "~/components/WeatherMap.vue";
 
 const searchQuery = ref("");
 const currentWeather = ref({});
@@ -343,7 +350,6 @@ const loading = ref(true);
 const loadingFinished = ref(false);
 const error = ref(null);
 const showLocationDialog = ref(false);
-const showLocationError = ref(false);
 
 // Get user preferences
 const {
@@ -365,7 +371,6 @@ const isDark = computed(() => colorMode.value === "dark");
 const {
   locationEnabled,
   locationLoading,
-  locationError,
   coordinates,
   requestLocation,
   clearCoordinates,
@@ -693,23 +698,6 @@ watch(
       startClock();
     }
   }
-);
-
-// Watch for changes in the locationError value
-watch(
-  locationError,
-  (newValue) => {
-    if (newValue) {
-      // Show the error message
-      showLocationError.value = true;
-
-      // Set a timer to hide the message after 2 seconds
-      setTimeout(() => {
-        showLocationError.value = false;
-      }, 2000);
-    }
-  },
-  { immediate: true }
 );
 
 // Initialize app on page load

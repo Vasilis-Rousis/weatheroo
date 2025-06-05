@@ -89,19 +89,5 @@ const handleClick = () => {
       />
       <MapPinOffIcon v-else class="h-5 w-5" />
     </Button>
-
-    <span
-      v-if="showEnabledMessage"
-      class="ml-2 text-xs text-green-600 dark:text-green-400 transition-opacity duration-300 animate-fadeIn"
-    >
-      Location enabled
-    </span>
-
-    <span
-      v-if="showDisabledMessage"
-      class="ml-2 text-xs text-gray-600 dark:text-gray-400 transition-opacity duration-300 animate-fadeIn"
-    >
-      Location disabled
-    </span>
   </div>
 </template>

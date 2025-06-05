@@ -17,9 +17,16 @@ export default defineNuxtConfig({
     storageKey: "weatheroo-dark-mode", // Use your existing storage key
   },
   runtimeConfig: {
+    // Private keys (only available on server-side)
     openWeatherApiKey: process.env.OPENWEATHER_API_KEY,
+
+    // Public keys (exposed to client-side for map tiles)
+    public: {
+      openWeatherApiKey: process.env.OPENWEATHER_API_KEY,
+    },
   },
   css: ["~/assets/css/main.css"],
+
   // Add experimental features to enhance performance
   experimental: {
     payloadExtraction: true,
@@ -27,6 +34,7 @@ export default defineNuxtConfig({
     viewTransition: true,
     componentIslands: true,
   },
+
   // Configure image module
   image: {
     quality: 80,
@@ -51,6 +59,7 @@ export default defineNuxtConfig({
     // Enable image preloading for critical images
     preload: true,
   },
+
   // Set app configuration
   app: {
     head: {
