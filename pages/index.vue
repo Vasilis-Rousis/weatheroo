@@ -19,13 +19,13 @@
       />
       <header class="mb-8">
         <div class="flex flex-row items-center justify-between gap-2">
-          <!-- Logo and Title - Responsive -->
+          <!-- Logo and Title - Responsive (Logo only on mobile) -->
           <div class="flex items-center flex-shrink-0">
             <CloudIcon
-              class="h-6 w-6 sm:h-8 sm:w-8 mr-2 text-blue-500 header-element header-logo"
+              class="h-16 w-16 sm:h-10 sm:w-10 mr-0 sm:mr-2 text-blue-500 header-element header-logo"
             />
             <h1
-              class="text-2xl sm:text-3xl font-bold header-element header-title"
+              class="hidden sm:block text-2xl sm:text-3xl font-bold header-element header-title"
             >
               Weatheroo
             </h1>
