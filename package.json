@@ -21,7 +21,6 @@
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "eslint": "^9.22.0",
-    "leaflet": "^1.9.4",
     "lucide-vue-next": "^0.482.0",
     "nuxt": "^3.16.0",
     "reka-ui": "^2.0.2",

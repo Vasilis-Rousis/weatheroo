@@ -27,11 +27,6 @@ export default defineNuxtConfig({
   },
   css: ["~/assets/css/main.css"],
 
-  // Add build configuration for Leaflet
-  build: {
-    transpile: ["leaflet"],
-  },
-
   // Add experimental features to enhance performance
   experimental: {
     payloadExtraction: true,

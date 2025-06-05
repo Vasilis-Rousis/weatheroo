@@ -152,6 +152,7 @@ const activeLayer = ref("precipitation");
 const map = ref(null);
 const weatherLayer = ref(null);
 const marker = ref(null);
+const leafletLoaded = ref(false);
 
 // Get runtime config for API key
 const config = useRuntimeConfig();
@@ -231,35 +232,54 @@ const currentLayerInfo = computed(() => {
   return availableLayers.find((layer) => layer.key === activeLayer.value);
 });
 
+// Load Leaflet library
+const loadLeaflet = () => {
+  return new Promise((resolve, reject) => {
+    if (leafletLoaded.value || window.L) {
+      resolve(window.L);
+      return;
+    }
+
+    // Create script tag for Leaflet JS
+    const script = document.createElement("script");
+    script.src = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.js";
+    script.integrity = "sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=";
+    script.crossOrigin = "";
+
+    // Create link tag for Leaflet CSS
+    const link = document.createElement("link");
+    link.rel = "stylesheet";
+    link.href = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.css";
+    link.integrity = "sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=";
+    link.crossOrigin = "";
+
+    script.onload = () => {
+      leafletLoaded.value = true;
+      resolve(window.L);
+    };
+
+    script.onerror = () => {
+      reject(new Error("Failed to load Leaflet"));
+    };
+
+    // Add to document head
+    document.head.appendChild(link);
+    document.head.appendChild(script);
+  });
+};
+
 // Initialize map
 const initMap = async () => {
   try {
     hasError.value = false;
     isLoading.value = true;
 
-    // Dynamic import to avoid SSR issues
-    const L = await import("leaflet");
+    console.log("Loading Leaflet...");
+    const L = await loadLeaflet();
+    console.log("Leaflet loaded successfully");
 
-    // Import Leaflet CSS
-    await import("leaflet/dist/leaflet.css");
-
-    // Better fix for default markers in Nuxt/SSR
-    try {
-      if (L.Icon && L.Icon.Default && L.Icon.Default.prototype) {
-        delete L.Icon.Default.prototype._getIconUrl;
-
-        L.Icon.Default.mergeOptions({
-          iconRetinaUrl:
-            "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png",
-          iconUrl:
-            "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png",
-          shadowUrl:
-            "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png",
-        });
-      }
-    } catch (iconError) {
-      console.warn("Could not fix Leaflet default icons:", iconError);
-      // Continue anyway - we'll use custom icons
+    if (!mapContainer.value) {
+      throw new Error("Map container not found");
     }
 
     // Create map
@@ -274,12 +294,16 @@ const initMap = async () => {
       attributionControl: true,
     }).setView([props.latitude, props.longitude], props.zoom);
 
+    console.log("Map created successfully");
+
     // Add base tile layer (OpenStreetMap)
     L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
       attribution:
         '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
       maxZoom: 18,
     }).addTo(map.value);
+
+    console.log("Base layer added");
 
     // Add marker for current location
     await updateMarker();
@@ -288,6 +312,7 @@ const initMap = async () => {
     await setActiveLayer(activeLayer.value);
 
     isLoading.value = false;
+    console.log("Map initialization completed");
   } catch (error) {
     console.error("Error initializing map:", error);
     hasError.value = true;
@@ -300,7 +325,11 @@ const updateMarker = async () => {
   try {
     if (!map.value) return;
 
-    const L = await import("leaflet");
+    const L = window.L;
+    if (!L) {
+      console.warn("Leaflet not available for marker update");
+      return;
+    }
 
     // Remove existing marker
     if (marker.value) {
@@ -342,6 +371,12 @@ const setActiveLayer = async (layerKey) => {
   try {
     if (!map.value) return;
 
+    const L = window.L;
+    if (!L) {
+      console.warn("Leaflet not available for layer update");
+      return;
+    }
+
     activeLayer.value = layerKey;
     const layerInfo = availableLayers.find((layer) => layer.key === layerKey);
 
@@ -351,9 +386,6 @@ const setActiveLayer = async (layerKey) => {
     if (weatherLayer.value) {
       map.value.removeLayer(weatherLayer.value);
     }
-
-    // Add new weather layer from OpenWeatherMap
-    const L = await import("leaflet");
 
     // Get API key from runtime config
     const apiKey = config.public.openWeatherApiKey;
@@ -372,6 +404,8 @@ const setActiveLayer = async (layerKey) => {
         maxZoom: 18,
       }
     ).addTo(map.value);
+
+    console.log(`Weather layer "${layerKey}" added successfully`);
   } catch (error) {
     console.error("Error setting weather layer:", error);
   }
@@ -420,7 +454,7 @@ onMounted(async () => {
     if (mapContainer.value) {
       initMap();
     }
-  }, 100);
+  }, 500);
 });
 
 // Cleanup on unmount
