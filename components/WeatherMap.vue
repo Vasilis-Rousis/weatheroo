@@ -1,7 +1,6 @@
 <!-- components/WeatherMap.vue -->
 <template>
   <div>
-    <h2 class="text-2xl font-bold mb-4">Weather Map</h2>
     <Card class="border-none shadow-md overflow-hidden">
       <CardHeader class="pb-6">
         <div

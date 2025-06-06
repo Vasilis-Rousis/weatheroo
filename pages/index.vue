@@ -207,7 +207,6 @@
             </Card>
 
             <!-- Daily Forecast -->
-            <h2 class="text-2xl font-bold mb-4">5-Day Forecast</h2>
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
               <Card
                 v-for="(forecastDay, index) in dailyForecasts"
@@ -267,7 +266,6 @@
                 <template #fallback>
                   <!-- Fallback content while loading -->
                   <div>
-                    <h2 class="text-2xl font-bold mb-4">Weather Map</h2>
                     <Card
                       class="border-none shadow-md overflow-hidden h-64 md:h-80"
                     >
