@@ -108,7 +108,7 @@
                 <div
                   class="flex flex-col md:flex-row justify-between items-center"
                 >
-                  <div class="weather-location-info">
+                  <div class="weather-location-info flex flex-col items-center md:items-start">
                     <h2
                       class="text-3xl font-bold mb-1 flex items-center gap-2 weather-city"
                     >
