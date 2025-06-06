@@ -275,9 +275,7 @@ const initMap = async () => {
     hasError.value = false;
     isLoading.value = true;
 
-    console.log("Loading Leaflet...");
     const L = await loadLeaflet();
-    console.log("Leaflet loaded successfully");
 
     if (!mapContainer.value) {
       throw new Error("Map container not found");
@@ -303,8 +301,6 @@ const initMap = async () => {
       wheelPxPerZoomLevel: 120, // Smoother zoom steps
     }).setView([props.latitude, props.longitude], props.zoom);
 
-    console.log("Map created successfully");
-
     // Add base tile layer with performance optimizations
     L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
       attribution:
@@ -320,8 +316,6 @@ const initMap = async () => {
       reuseTiles: true, // Reuse tiles when possible
     }).addTo(map.value);
 
-    console.log("Base layer added");
-
     // Add marker for current location
     await updateMarker();
 
@@ -329,7 +323,6 @@ const initMap = async () => {
     await setActiveLayer(activeLayer.value);
 
     isLoading.value = false;
-    console.log("Map initialization completed");
   } catch (error) {
     console.error("Error initializing map:", error);
     hasError.value = true;
@@ -432,7 +425,6 @@ const setActiveLayer = async (layerKey) => {
       }
     ).addTo(map.value);
 
-    console.log(`Weather layer "${layerKey}" added successfully`);
   } catch (error) {
     console.error("Error setting weather layer:", error);
   }
