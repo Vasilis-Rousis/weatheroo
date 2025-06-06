@@ -172,7 +172,6 @@ export function useWeatherService() {
     const cachedData = getCachedWeather(cacheKey);
 
     if (cachedData) {
-      console.log("Using client-cached weather data for", city);
       currentWeather.value = cachedData.current;
       forecast.value = cachedData.forecast;
       cacheInfo.value = {
@@ -260,7 +259,6 @@ export function useWeatherService() {
     const cachedData = getCachedWeather(cacheKey);
 
     if (cachedData) {
-      console.log("Using client-cached coords data");
       currentWeather.value = cachedData.current;
       forecast.value = cachedData.forecast;
       cacheInfo.value = {
