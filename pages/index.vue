@@ -131,14 +131,8 @@
                   </div>
 
                   <div
-                    class="flex items-center mt-4 md:mt-0 weather-current-display"
+                    class="flex items-center gap-2 mt-4 md:mt-0 weather-current-display"
                   >
-                    <WeatherIcons
-                      v-if="currentWeather.weather?.[0]?.icon"
-                      :weather-code="currentWeather.weather[0].icon"
-                      size="large"
-                      class="weather-icon"
-                    />
                     <div class="text-center">
                       <h3 class="text-5xl font-bold weather-temp">
                         {{ Math.round(currentWeather.main?.temp) }}°C
@@ -147,6 +141,12 @@
                         {{ currentWeather.weather?.[0]?.description }}
                       </p>
                     </div>
+                    <WeatherIcons
+                      v-if="currentWeather.weather?.[0]?.icon"
+                      :weather-code="currentWeather.weather[0].icon"
+                      size="large"
+                      class="weather-icon"
+                    />
                   </div>
                 </div>
               </div>

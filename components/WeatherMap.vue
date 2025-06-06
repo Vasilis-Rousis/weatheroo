@@ -29,13 +29,13 @@
           <!-- Map Container -->
           <div
             ref="mapContainer"
-            class="w-full map-container bg-gray-100 dark:bg-gray-800"
+            class="w-full map-container bg-gray-100 dark:bg-gray-800 relative z-0"
           />
 
           <!-- Loading Overlay -->
           <div
             v-if="isLoading"
-            class="absolute inset-0 bg-white/80 dark:bg-gray-900/80 flex items-center justify-center backdrop-blur-sm"
+            class="absolute inset-0 bg-white/80 dark:bg-gray-900/80 flex items-center justify-center backdrop-blur-sm z-20"
           >
             <div class="flex items-center gap-2">
               <div
@@ -48,7 +48,7 @@
           <!-- Error State -->
           <div
             v-if="hasError"
-            class="absolute inset-0 bg-white/90 dark:bg-gray-900/90 flex items-center justify-center backdrop-blur-sm"
+            class="absolute inset-0 bg-white/90 dark:bg-gray-900/90 flex items-center justify-center backdrop-blur-sm z-20"
           >
             <div class="text-center p-4">
               <div class="text-red-500 mb-2">
@@ -66,7 +66,7 @@
           <!-- Legend -->
           <div
             v-if="showLegend && currentLayerInfo && !isLoading && !hasError"
-            class="absolute bottom-4 left-4 bg-white/95 dark:bg-gray-800/95 backdrop-blur-sm rounded-lg p-3 text-xs shadow-lg border border-gray-200 dark:border-gray-700"
+            class="absolute bottom-4 left-4 bg-white/95 dark:bg-gray-800/95 backdrop-blur-sm rounded-lg p-3 text-xs shadow-lg border border-gray-200 dark:border-gray-700 z-30 legend-container"
           >
             <div class="font-semibold mb-2 text-gray-800 dark:text-gray-200">
               {{ currentLayerInfo.name }}
@@ -85,11 +85,13 @@
           </div>
 
           <!-- Controls -->
-          <div class="absolute top-4 right-4 flex flex-col gap-2">
+          <div
+            class="absolute top-4 right-4 flex flex-col gap-2 z-30 controls-container"
+          >
             <Button
               variant="outline"
               size="icon"
-              class="bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm"
+              class="bg-white/95 dark:bg-gray-800/95 backdrop-blur-sm shadow-lg border border-gray-200 dark:border-gray-700 control-button"
               @click="toggleLegend"
             >
               <InfoIcon class="h-4 w-4" />
@@ -97,7 +99,7 @@
             <Button
               variant="outline"
               size="icon"
-              class="bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm"
+              class="bg-white/95 dark:bg-gray-800/95 backdrop-blur-sm shadow-lg border border-gray-200 dark:border-gray-700 control-button"
               @click="centerOnLocation"
             >
               <LocateIcon class="h-4 w-4" />
@@ -282,7 +284,7 @@ const initMap = async () => {
       throw new Error("Map container not found");
     }
 
-    // Create map
+    // Create map with performance optimizations
     map.value = L.map(mapContainer.value, {
       zoomControl: true,
       scrollWheelZoom: true,
@@ -292,15 +294,31 @@ const initMap = async () => {
       dragging: true,
       touchZoom: true,
       attributionControl: true,
+      zoomControlOptions: {
+        position: "topleft", // Move zoom controls away from our custom controls
+      },
+      // Performance optimizations
+      preferCanvas: true, // Use canvas for better performance
+      renderer: L.canvas(), // Force canvas renderer
+      wheelDebounceTime: 60, // Reduce wheel event frequency
+      wheelPxPerZoomLevel: 120, // Smoother zoom steps
     }).setView([props.latitude, props.longitude], props.zoom);
 
     console.log("Map created successfully");
 
-    // Add base tile layer (OpenStreetMap)
+    // Add base tile layer with performance optimizations
     L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
       attribution:
         '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
       maxZoom: 18,
+      // Performance optimizations
+      maxNativeZoom: 18,
+      tileSize: 256,
+      zoomOffset: 0,
+      keepBuffer: 2, // Keep fewer tiles in memory
+      updateWhenIdle: true, // Only update tiles when map is idle
+      updateWhenZooming: false, // Don't update during zoom animation
+      reuseTiles: true, // Reuse tiles when possible
     }).addTo(map.value);
 
     console.log("Base layer added");
@@ -402,6 +420,16 @@ const setActiveLayer = async (layerKey) => {
           '© <a href="https://openweathermap.org/">OpenWeatherMap</a>',
         opacity: 0.6,
         maxZoom: 18,
+        // Performance optimizations for weather layer
+        maxNativeZoom: 16, // Weather tiles often don't go beyond zoom 16
+        tileSize: 256,
+        keepBuffer: 1, // Keep fewer weather tiles in memory
+        updateWhenIdle: true, // Only update when map stops moving
+        updateWhenZooming: false, // Don't update during zoom
+        reuseTiles: true,
+        crossOrigin: true,
+        // Reduce tile loading priority for smoother base map
+        className: "weather-tiles",
       }
     ).addTo(map.value);
 
@@ -468,18 +496,24 @@ onUnmounted(() => {
   }
 });
 
-// Handle window resize
-const handleResize = () => {
-  if (map.value) {
-    setTimeout(() => {
-      try {
-        map.value.invalidateSize();
-      } catch (error) {
-        console.warn("Error invalidating map size:", error);
+// Handle window resize with debouncing for better performance
+const handleResize = (() => {
+  let timeoutId = null;
+  return () => {
+    if (timeoutId) {
+      clearTimeout(timeoutId);
+    }
+    timeoutId = setTimeout(() => {
+      if (map.value) {
+        try {
+          map.value.invalidateSize();
+        } catch (error) {
+          console.warn("Error invalidating map size:", error);
+        }
       }
-    }, 100);
-  }
-};
+    }, 150); // Debounce resize events
+  };
+})();
 
 onMounted(() => {
   window.addEventListener("resize", handleResize);
@@ -520,9 +554,40 @@ onUnmounted(() => {
   }
 }
 
-/* Leaflet controls styling for dark mode */
+/* Performance optimizations for map container */
+.leaflet-container {
+  @apply rounded-b-lg;
+  z-index: 1 !important;
+  /* Hardware acceleration for smoother scrolling */
+  transform: translateZ(0);
+  will-change: transform;
+  /* Optimize image rendering */
+  image-rendering: optimizeSpeed;
+  image-rendering: -webkit-optimize-contrast;
+}
+
+/* Optimize weather tile rendering */
+.weather-tiles {
+  /* Hardware acceleration for weather overlay */
+  transform: translateZ(0);
+  will-change: opacity;
+}
+
+/* Reduce expensive effects during map interactions */
+.leaflet-container.leaflet-drag-target {
+  /* Temporarily disable expensive effects during dragging */
+}
+
+.leaflet-container.leaflet-drag-target .absolute {
+  /* Reduce backdrop blur during drag for better performance */
+  backdrop-filter: blur(2px) !important;
+}
+
+/* Leaflet controls styling for dark mode - optimized */
 .leaflet-control-zoom a {
   @apply dark:bg-gray-800 dark:text-white dark:border-gray-600;
+  /* Hardware acceleration for controls */
+  transform: translateZ(0);
 }
 
 .leaflet-control-zoom a:hover {
@@ -531,11 +596,19 @@ onUnmounted(() => {
 
 .leaflet-control-attribution {
   @apply dark:bg-gray-800/90 dark:text-gray-300;
+  /* Optimize text rendering */
+  text-rendering: optimizeSpeed;
 }
 
-/* Ensure map container has proper styling */
-.leaflet-container {
-  @apply rounded-b-lg;
+/* Ensure Leaflet's internal elements don't interfere */
+.leaflet-control-container {
+  pointer-events: none;
+}
+
+.leaflet-control {
+  pointer-events: auto;
+  /* Hardware acceleration for controls */
+  transform: translateZ(0);
 }
 
 /* Custom popup styling */
@@ -545,5 +618,70 @@ onUnmounted(() => {
 
 .leaflet-popup-tip {
   @apply dark:border-t-gray-800;
+}
+
+/* Ensure our custom controls are always on top - optimized */
+.absolute.z-30 {
+  z-index: 1000 !important;
+  /* Hardware acceleration for custom controls */
+  transform: translateZ(0);
+  will-change: transform;
+}
+
+/* Optimize legend and controls for performance */
+.absolute.z-30 button {
+  /* Reduce backdrop blur complexity */
+  backdrop-filter: blur(4px) !important;
+  /* Hardware acceleration */
+  transform: translateZ(0);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.absolute.z-30 button:hover {
+  transform: translateZ(0) scale(1.02);
+}
+
+/* Optimize tile loading appearance */
+.leaflet-tile-container {
+  /* Smooth tile appearance */
+  transform: translateZ(0);
+}
+
+.leaflet-tile {
+  /* Optimize individual tile rendering */
+  image-rendering: auto;
+  transform: translateZ(0);
+}
+
+/* Reduce motion for users who prefer it */
+@media (prefers-reduced-motion: reduce) {
+  .leaflet-container {
+    transition: none !important;
+  }
+
+  .control-button {
+    transition: none !important;
+  }
+
+  .control-button:hover {
+    transform: none !important;
+  }
+}
+
+/* Optimize for mobile touch interactions */
+@media (max-width: 768px) {
+  .leaflet-container {
+    /* Better touch response on mobile */
+    touch-action: pan-x pan-y;
+  }
+
+  /* Simpler effects on mobile for better performance */
+  .control-button {
+    backdrop-filter: blur(2px) !important;
+  }
+
+  .legend-container {
+    backdrop-filter: blur(2px) !important;
+  }
 }
 </style>
