@@ -1,10 +1,10 @@
-import redis from "../utils/redis";
+import { setWithExpiry } from "../utils/redis";
 
-export default defineEventHandler(async (event) => {
+export default defineEventHandler(async () => {
   try {
-    await redis.set("keepalive", Date.now().toString());
+    await setWithExpiry("keepalive", Date.now().toString(), 3600); // 1 hour expiry
     return { ok: true };
   } catch (error) {
-    return { ok: false, error: error.message };
+    return { ok: false, error: (error as Error).message };
   }
 });
