@@ -152,6 +152,35 @@
           </div>
         </CardContent>
       </Card>
+
+      <!-- Cron Job Test -->
+      <Card class="mb-6">
+        <CardHeader>
+          <CardTitle>Cron Job Test</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div class="mb-4">
+            <Button :disabled="loading" @click="testCronJob">
+              Test Cron Ping Redis
+            </Button>
+          </div>
+
+          <div
+            v-if="cronResult"
+            class="bg-gray-100 dark:bg-gray-800 p-4 rounded-lg"
+          >
+            <div class="mb-2">
+              <span class="font-semibold">Status:</span>
+              <span :class="cronResult.ok ? 'text-green-600' : 'text-red-600'">
+                {{ cronResult.ok ? "Success" : "Failed" }}
+              </span>
+            </div>
+            <pre class="text-xs overflow-x-auto">{{
+              JSON.stringify(cronResult, null, 2)
+            }}</pre>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   </div>
 </template>
@@ -168,6 +197,7 @@ const healthResult = ref(null);
 const cacheResult = ref(null);
 const rateLimitResult = ref(null);
 const weatherResult = ref(null);
+const cronResult = ref(null);
 const testCity = ref("London");
 
 const testRedisHealth = async () => {
@@ -256,6 +286,18 @@ const testWeatherAPI = async () => {
     }
   } catch (error) {
     weatherResult.value = { error: error.message };
+  } finally {
+    loading.value = false;
+  }
+};
+
+const testCronJob = async () => {
+  loading.value = true;
+  try {
+    const response = await fetch("/api/cron-ping-redis");
+    cronResult.value = await response.json();
+  } catch (error) {
+    cronResult.value = { error: error.message };
   } finally {
     loading.value = false;
   }
