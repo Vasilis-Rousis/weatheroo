@@ -8,6 +8,7 @@ export default defineNuxtConfig({
     "@nuxtjs/tailwindcss",
     "shadcn-nuxt",
     "@nuxtjs/color-mode", // Add the color mode module
+    "@pinia/nuxt",
   ],
   // Configure the color mode module
   colorMode: {

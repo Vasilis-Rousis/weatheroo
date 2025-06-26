@@ -310,7 +310,9 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted, watch, nextTick } from "vue";
+import { ref, computed, onMounted, onUnmounted, watch } from "vue";
+import { storeToRefs } from 'pinia';
+import { useWeatherStore } from '~/stores/weather';
 import {
   CloudIcon,
   SearchIcon,
@@ -337,17 +339,14 @@ import LocationButton from "~/components/LocationButton.vue";
 import LocationDialog from "~/components/LocationDialog.vue";
 import SkeletonLoader from "~/components/SkeletonLoader.vue";
 import { useLocationService } from "~/composables/useLocationService";
-import { useWeatherService } from "~/composables/useWeatherService";
 import { useUserPreferences } from "~/composables/useUserPreferences";
-import WeatherMap from "~/components/WeatherMap.vue";
+const WeatherMap = defineAsyncComponent(() => import('~/components/WeatherMap.vue'));
 
 const searchQuery = ref("");
-const currentWeather = ref({});
-const forecast = ref({});
-const loading = ref(true);
-const loadingFinished = ref(false);
-const error = ref(null);
 const showLocationDialog = ref(false);
+
+const weatherStore = useWeatherStore();
+const { currentWeather, forecast, loading, loadingFinished, error } = storeToRefs(weatherStore);
 
 // Get user preferences
 const {
@@ -373,8 +372,6 @@ const {
   requestLocation,
   clearCoordinates,
 } = useLocationService();
-
-const { getWeatherByCity, getWeatherByCoords } = useWeatherService();
 
 // Clock and timezone variables
 const cityLocalTime = ref(null);
@@ -478,155 +475,48 @@ const toggleTheme = async () => {
 // Search for a city's weather
 const searchCity = async () => {
   if (!searchQuery.value.trim()) return;
-
-  // Reset states
-  loading.value = true;
-  loadingFinished.value = false;
-  error.value = null;
-
-  try {
-    const result = await getWeatherByCity(searchQuery.value);
-
-    if (result.error) {
-      error.value = result.error;
-    } else {
-      currentWeather.value = result.current;
-      forecast.value = result.forecast;
-
-      // Update location state
-      locationEnabled.value = false;
-
-      // IMPORTANT: When a user explicitly searches for a city,
-      // we should mark location as denied to prevent auto-enabling
-      denyLocationPermission();
-
-      // Update the timezone offset and restart the clock
-      if (result.current && result.current.timezone !== undefined) {
-        timezoneOffsetSeconds.value = result.current.timezone;
-        updateTimezoneString();
-        startClock();
-      }
-
-      // Save the city in user preferences
-      updateLastCity(searchQuery.value);
-    }
-
-    // Mark data as loaded
-    loadingFinished.value = true;
-
-    // Wait for content to be rendered
-    await nextTick();
-
-    // Slightly delay hiding the skeleton for smoother transition
-    setTimeout(() => {
-      loading.value = false;
-    }, 400);
-  } catch (err) {
-    error.value = "Failed to fetch weather data. Please try again.";
-    console.error(err);
-
-    // Still mark as finished to show the error message
-    loadingFinished.value = true;
-
-    setTimeout(() => {
-      loading.value = false;
-    }, 400);
+  await weatherStore.fetchWeatherByCity(searchQuery.value);
+  if (!error.value) {
+    locationEnabled.value = false;
+    denyLocationPermission();
+    updateLastCity(searchQuery.value);
   }
 };
 
 // Handle location request
 const handleLocationRequest = async () => {
   try {
-    // Update preferences to enable location and remove any denied status
     enableLocationPermission();
-
-    // Manually set location as enabled for immediate UI update
     locationEnabled.value = true;
-
-    // Now request the location
     const position = await requestLocation();
-
     if (position) {
-      // Reset states
-      loading.value = true;
-      loadingFinished.value = false;
-      error.value = null;
-
-      const result = await getWeatherByCoords(
-        position.latitude,
-        position.longitude
-      );
-
-      if (result.error) {
-        error.value = result.error;
-
-        // If there was an error getting weather, revert location enabled state
-        locationEnabled.value = false;
-        disableLocationPermission();
-        denyLocationPermission();
-      } else {
-        currentWeather.value = result.current;
-        forecast.value = result.forecast;
-        searchQuery.value = result.current.name;
-
-        // Update the timezone offset and restart the clock
-        if (result.current && result.current.timezone !== undefined) {
-          timezoneOffsetSeconds.value = result.current.timezone;
-          updateTimezoneString();
-          startClock();
-        }
-
-        // Save the city in user preferences
-        updateLastCity(result.current.name);
+      await weatherStore.fetchWeatherByCoords(position.latitude, position.longitude);
+      if (!error.value) {
+        searchQuery.value = currentWeather.value.name;
+        updateLastCity(currentWeather.value.name);
       }
-
-      // Mark data as loaded
-      loadingFinished.value = true;
-
-      // Wait for content to be rendered
-      await nextTick();
-
-      // Slightly delay hiding the skeleton for smoother transition
-      setTimeout(() => {
-        loading.value = false;
-      }, 400);
     } else {
-      // If we couldn't get position, revert location enabled state
       locationEnabled.value = false;
       disableLocationPermission();
       denyLocationPermission();
     }
   } catch (err) {
     console.error("Error getting location:", err);
-
-    // If there was an error, revert location enabled state
     locationEnabled.value = false;
     disableLocationPermission();
     denyLocationPermission();
-
-    // Still update loading states
-    loadingFinished.value = true;
-    loading.value = false;
   }
 };
 
 // Handle disabling location
 const handleLocationDisable = () => {
-  // Update local state to disable location and clear coordinates
   clearCoordinates();
-
-  // Update user preferences to EXPLICITLY disable location
   disableLocationPermission();
-
-  // Also mark as denied to prevent auto-enabling on refresh
   denyLocationPermission();
-
-  // If we have a last city, load it
   if (lastCity.value) {
     searchQuery.value = lastCity.value;
     searchCity();
   } else {
-    // Otherwise, load a default city (London)
     searchQuery.value = "London";
     searchCity();
   }
@@ -634,7 +524,6 @@ const handleLocationDisable = () => {
 
 // Handle when the user declines location permission
 const handleLocationDecline = () => {
-  // If the user previously allowed location but now declined, we should load their last city or default
   if (lastCity.value) {
     searchQuery.value = lastCity.value;
     searchCity();
@@ -643,46 +532,12 @@ const handleLocationDecline = () => {
 
 // Watch for changes in the coordinates to update weather
 watch(coordinates, async (newCoords) => {
-  // Only process coordinate changes if location permission is explicitly enabled
   if (newCoords && locationPermissionEnabled.value) {
-    // Reset states
-    loading.value = true;
-    loadingFinished.value = false;
-    error.value = null;
-
-    const result = await getWeatherByCoords(
-      newCoords.latitude,
-      newCoords.longitude
-    );
-
-    if (result.error) {
-      error.value = result.error;
-    } else {
-      currentWeather.value = result.current;
-      forecast.value = result.forecast;
-      searchQuery.value = result.current.name;
-
-      // Update the timezone offset and restart the clock
-      if (result.current && result.current.timezone !== undefined) {
-        timezoneOffsetSeconds.value = result.current.timezone;
-        updateTimezoneString();
-        startClock();
-      }
-
-      // Save the city in user preferences
-      updateLastCity(result.current.name);
+    await weatherStore.fetchWeatherByCoords(newCoords.latitude, newCoords.longitude);
+    if (!error.value) {
+      searchQuery.value = currentWeather.value.name;
+      updateLastCity(currentWeather.value.name);
     }
-
-    // Mark data as loaded
-    loadingFinished.value = true;
-
-    // Wait for content to be rendered
-    await nextTick();
-
-    // Slightly delay hiding the skeleton for smoother transition
-    setTimeout(() => {
-      loading.value = false;
-    }, 400);
   }
 });
 
@@ -700,157 +555,54 @@ watch(
 
 // Initialize app on page load
 onMounted(async () => {
-  try {
-    loading.value = true;
-    loadingFinished.value = false;
-
-    // Change the priority order:
-    // 1. First, check if location is EXPLICITLY DISABLED in the app preferences
-    if (locationPermissionDenied.value) {
-      // Make sure location UI state reflects this
-      locationEnabled.value = false;
-
-      // If location is explicitly disabled by the user, load the last city or default
-      if (lastCity.value) {
-        searchQuery.value = lastCity.value;
-        const result = await getWeatherByCity(lastCity.value);
-
-        if (!result.error) {
-          currentWeather.value = result.current;
-          forecast.value = result.forecast;
-
-          // Initialize timezone info
-          if (result.current && result.current.timezone !== undefined) {
-            timezoneOffsetSeconds.value = result.current.timezone;
-            updateTimezoneString();
-            startClock();
-          }
-
-          // Mark data as loaded
-          loadingFinished.value = true;
-          setTimeout(() => {
-            loading.value = false;
-          }, 800);
-          return; // Exit early
-        }
-      }
-      // Fall through to default city if last city failed
-    }
-
-    // 2. Check if location is EXPLICITLY ENABLED in preferences
-    else if (locationPermissionEnabled.value && "geolocation" in navigator) {
-      try {
-        // Make sure location UI state reflects this
-        locationEnabled.value = true;
-
-        const position = await requestLocation();
-        if (position) {
-          const result = await getWeatherByCoords(
-            position.latitude,
-            position.longitude
-          );
-
-          if (!result.error) {
-            currentWeather.value = result.current;
-            forecast.value = result.forecast;
-            searchQuery.value = result.current.name;
-            updateLastCity(result.current.name);
-
-            if (result.current && result.current.timezone !== undefined) {
-              timezoneOffsetSeconds.value = result.current.timezone;
-              updateTimezoneString();
-              startClock();
-            }
-
-            // Mark data as loaded and complete the loading transition
-            loadingFinished.value = true;
-            setTimeout(() => {
-              loading.value = false;
-            }, 800);
-            return; // Exit early if geolocation worked
-          }
-        }
-      } catch (err) {
-        console.error("Error using saved location permission:", err);
-      }
-    }
-
-    // 3. If no explicit location preference, check if we have a saved city to load
-    if (lastCity.value) {
-      // If we're loading a saved city and not using location, make sure the UI reflects this
-      locationEnabled.value = false;
-
-      searchQuery.value = lastCity.value;
-      const result = await getWeatherByCity(lastCity.value);
-
-      if (!result.error) {
-        currentWeather.value = result.current;
-        forecast.value = result.forecast;
-
-        // Initialize timezone info
-        if (result.current && result.current.timezone !== undefined) {
-          timezoneOffsetSeconds.value = result.current.timezone;
-          updateTimezoneString();
-          startClock();
-        }
-
-        // Mark data as loaded
-        loadingFinished.value = true;
-        setTimeout(() => {
-          loading.value = false;
-        }, 800);
-        return; // Exit early
-      }
-    }
-
-    // 4. Only prompt for location if no previous preferences exist
-    if (
-      "geolocation" in navigator &&
-      !locationPermissionDenied.value &&
-      !locationPermissionEnabled.value
-    ) {
-      // Only show the location dialog if it hasn't been shown before
-      if (!locationPromptShown.value) {
-        setTimeout(() => {
-          showLocationDialog.value = true;
-        }, 1500);
-      }
-    }
-
-    // Fall back to London as the default city if everything else fails
-    // And make sure location UI shows as disabled
+  if (locationPermissionDenied.value) {
     locationEnabled.value = false;
-
-    const result = await getWeatherByCity("London");
-
-    if (!result.error) {
-      currentWeather.value = result.current;
-      forecast.value = result.forecast;
-      searchQuery.value = "London";
-      updateLastCity("London");
-
-      if (result.current && result.current.timezone !== undefined) {
-        timezoneOffsetSeconds.value = result.current.timezone;
-        updateTimezoneString();
-        startClock();
-      }
-    } else {
-      error.value = "Failed to load weather data";
+    if (lastCity.value) {
+      searchQuery.value = lastCity.value;
+      await weatherStore.fetchWeatherByCity(lastCity.value);
+      return;
     }
+  } else if (locationPermissionEnabled.value && "geolocation" in navigator) {
+    try {
+      locationEnabled.value = true;
+      const position = await requestLocation();
+      if (position) {
+        await weatherStore.fetchWeatherByCoords(position.latitude, position.longitude);
+        if (!error.value) {
+          searchQuery.value = currentWeather.value.name;
+          updateLastCity(currentWeather.value.name);
+        }
+        return;
+      }
+    } catch (err) {
+      console.error("Error using saved location permission:", err);
+    }
+  }
 
-    // Mark data as loaded regardless of success/failure
-    loadingFinished.value = true;
-  } catch (err) {
-    error.value = "Failed to fetch weather data";
-    console.error(err);
+  if (lastCity.value) {
+    locationEnabled.value = false;
+    searchQuery.value = lastCity.value;
+    await weatherStore.fetchWeatherByCity(lastCity.value);
+    return;
+  }
 
-    // Mark as loaded to show the error state
-    loadingFinished.value = true;
-  } finally {
-    // Add a small delay for better UX
-    setTimeout(() => {
-      loading.value = false;
-    }, 800);
+  if (
+    "geolocation" in navigator &&
+    !locationPermissionDenied.value &&
+    !locationPermissionEnabled.value
+  ) {
+    if (!locationPromptShown.value) {
+      setTimeout(() => {
+        showLocationDialog.value = true;
+      }, 1500);
+    }
+  }
+
+  locationEnabled.value = false;
+  await weatherStore.fetchWeatherByCity("London");
+  if (!error.value) {
+    searchQuery.value = "London";
+    updateLastCity("London");
   }
 });
 

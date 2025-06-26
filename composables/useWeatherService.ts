@@ -33,7 +33,7 @@ interface WeatherInfo {
   icon: string;
 }
 
-interface CurrentWeather {
+export interface CurrentWeather {
   coord: { lon: number; lat: number };
   weather: WeatherInfo[];
   main: WeatherMain;
@@ -59,7 +59,7 @@ interface ForecastItem {
   dt_txt: string;
 }
 
-interface Forecast {
+export interface Forecast {
   list: ForecastItem[];
   city: {
     id: number;

@@ -1,5 +1,6 @@
 // server/api/weather.ts
 import { defineEventHandler, getQuery, createError } from "h3";
+import { z } from "zod";
 import {
   CACHE_DURATION,
   isRateLimited,
@@ -9,17 +10,42 @@ import {
   getUsageStats,
 } from "./utils/rateLimit";
 
+// Define the schema for the query parameters
+const querySchema = z.object({
+  city: z.string().optional(),
+  lat: z.string().optional(),
+  lon: z.string().optional(),
+});
+
 export default defineEventHandler(async (event) => {
-  // Get query parameters
-  const query = getQuery(event);
-  const city = query.city as string;
-  const lat = query.lat as string;
-  const lon = query.lon as string;
+  // Validate and parse the query parameters
+  const query = await getQuery(event);
+  const parsedQuery = querySchema.safeParse(query);
+
+  if (!parsedQuery.success) {
+    throw createError({
+      statusCode: 400,
+      statusMessage: "Bad Request",
+      data: { error: "Invalid query parameters" },
+    });
+  }
+
+  const { city, lat, lon } = parsedQuery.data;
 
   // Create a cache key based on the query parameters
   const cacheKey = city
     ? `city:${city.toLowerCase().trim()}`
-    : `coords:${parseFloat(lat).toFixed(2)},${parseFloat(lon).toFixed(2)}`;
+    : lat && lon
+    ? `coords:${parseFloat(lat).toFixed(2)},${parseFloat(lon).toFixed(2)}`
+    : null;
+
+  if (!cacheKey) {
+    throw createError({
+      statusCode: 400,
+      statusMessage: "Bad Request",
+      data: { error: "Invalid query parameters" },
+    });
+  }
 
   // Check cache first
   const cachedData = await getCachedWeather(cacheKey);
@@ -114,9 +140,11 @@ export default defineEventHandler(async (event) => {
     const currentData = await currentResponse.json();
 
     if (currentData.cod === "404" || currentData.cod === 404) {
-      return {
-        error: "Location not found",
-      };
+      throw createError({
+        statusCode: 404,
+        statusMessage: "Not Found",
+        data: { error: "Location not found" },
+      });
     }
 
     // If we get an error from OpenWeatherMap related to the API key
@@ -154,12 +182,14 @@ export default defineEventHandler(async (event) => {
     console.log(`[Weather API] New data fetched for ${cacheKey}`);
 
     return responseData;
-  } catch (error) {
+  } catch (error: unknown) {
     console.error("Error fetching weather data:", error);
 
-    // If it's already an H3Error, rethrow it
-    if (error.statusCode) {
-      throw error;
+    if (typeof error === 'object' && error !== null && 'statusCode' in error) {
+        const h3Error = error as { statusCode: number };
+        if (h3Error.statusCode) {
+            throw error;
+        }
     }
 
     throw createError({
