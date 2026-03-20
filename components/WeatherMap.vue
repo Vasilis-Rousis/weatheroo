@@ -84,24 +84,20 @@
 
           <!-- Controls -->
           <div
-            class="absolute top-4 right-4 flex flex-col gap-1.5 z-30 controls-container"
+            class="absolute top-[10px] right-[10px] flex flex-col gap-1 z-30 controls-container"
           >
-            <Button
-              variant="outline"
-              size="icon"
-              class="h-8 w-8 bg-card/95 backdrop-blur-md shadow-glass border-border/50 rounded-lg control-button"
+            <button
+              class="leaflet-style-button"
               @click="toggleLegend"
             >
               <InfoIcon class="h-3.5 w-3.5" />
-            </Button>
-            <Button
-              variant="outline"
-              size="icon"
-              class="h-8 w-8 bg-card/95 backdrop-blur-md shadow-glass border-border/50 rounded-lg control-button"
+            </button>
+            <button
+              class="leaflet-style-button"
               @click="centerOnLocation"
             >
               <LocateIcon class="h-3.5 w-3.5" />
-            </Button>
+            </button>
           </div>
         </div>
       </div>
@@ -579,6 +575,7 @@ onUnmounted(() => {
   @apply dark:bg-card dark:text-foreground dark:border-border;
   transform: translateZ(0);
   border-radius: 0.5rem !important;
+  border: 1px solid hsl(var(--border)) !important;
 }
 
 .leaflet-control-zoom a:hover {
@@ -586,9 +583,21 @@ onUnmounted(() => {
 }
 
 .leaflet-control-zoom {
-  border-radius: 0.75rem !important;
-  overflow: hidden;
-  border: 1px solid hsl(var(--border)) !important;
+  border: none !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.leaflet-control-zoom a.leaflet-control-zoom-in {
+  border-bottom: 1px solid hsl(var(--border)) !important;
+  margin-bottom: 0;
+}
+
+.leaflet-control-zoom a.leaflet-control-zoom-out {
+  border-top: 1px solid hsl(var(--border)) !important;
 }
 
 .leaflet-control-attribution {
@@ -615,20 +624,41 @@ onUnmounted(() => {
   @apply dark:border-t-card;
 }
 
-.absolute.z-30 {
+.controls-container {
   z-index: 1000 !important;
   transform: translateZ(0);
   will-change: transform;
 }
 
-.absolute.z-30 button {
-  backdrop-filter: blur(8px) !important;
+.leaflet-style-button {
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0.5rem;
+  border: 1px solid hsl(var(--border));
+  background: #fff;
+  color: #333;
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
   transform: translateZ(0);
-  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  transition: background-color 0.15s ease;
 }
 
-.absolute.z-30 button:hover {
-  transform: translateZ(0) scale(1.04);
+.leaflet-style-button:hover {
+  background: #f4f4f4;
+}
+
+.dark .leaflet-style-button {
+  background: hsl(var(--card));
+  color: hsl(var(--foreground));
+  border-color: hsl(var(--border));
+}
+
+.dark .leaflet-style-button:hover {
+  background: hsl(var(--secondary));
 }
 
 .leaflet-tile-container {
