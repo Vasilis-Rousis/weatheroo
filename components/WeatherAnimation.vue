@@ -126,7 +126,7 @@ onUnmounted(() => {
   pointer-events: none;
   overflow: hidden;
   z-index: 0;
-  opacity: 0.7;
+  opacity: 0.5;
 }
 
 /* Sunny animation */
@@ -139,10 +139,10 @@ onUnmounted(() => {
 .sun {
   width: 60px;
   height: 60px;
-  background: #ffd700;
+  background: hsl(36 90% 55%);
   border-radius: 50%;
-  box-shadow: 0 0 30px rgba(255, 215, 0, 0.7);
-  animation: pulse 3s infinite alternate;
+  box-shadow: 0 0 40px hsla(36 90% 55% / 0.5);
+  animation: pulse 4s ease-in-out infinite alternate;
 }
 
 .sun-ray {
@@ -150,10 +150,10 @@ onUnmounted(() => {
   top: 30px;
   left: 30px;
   width: 80px;
-  height: 3px;
-  background: #ffd700;
+  height: 2px;
+  background: hsla(36 90% 55% / 0.6);
   transform-origin: 0 0;
-  animation: rotate 10s linear infinite;
+  animation: rotate 12s linear infinite;
 }
 
 /* Cloudy animation */
@@ -161,17 +161,22 @@ onUnmounted(() => {
   position: absolute;
   width: 80px;
   height: 40px;
-  background: white;
+  background: hsl(215 20% 85%);
   border-radius: 40px;
-  box-shadow: 0 0 10px rgba(255, 255, 255, 0.3);
-  animation: floatWithFade 20s linear infinite;
+  box-shadow: 0 0 10px hsla(215 20% 85% / 0.3);
+  animation: floatWithFade 24s linear infinite;
+}
+
+:global(.dark) .cloud {
+  background: hsl(222 15% 25%);
+  box-shadow: 0 0 10px hsla(222 15% 25% / 0.3);
 }
 
 .cloud::before,
 .cloud::after {
   content: "";
   position: absolute;
-  background: white;
+  background: inherit;
   border-radius: 50%;
 }
 
@@ -198,9 +203,9 @@ onUnmounted(() => {
 
 .raindrop {
   position: absolute;
-  width: 2px;
-  height: 20px;
-  background: linear-gradient(to bottom, transparent, #3498db);
+  width: 1.5px;
+  height: 18px;
+  background: linear-gradient(to bottom, transparent, hsl(213 80% 58% / 0.5));
   top: -20px;
   animation: rain linear infinite;
 }
@@ -208,13 +213,17 @@ onUnmounted(() => {
 /* Snow animation */
 .snowflake {
   position: absolute;
-  width: 8px;
-  height: 8px;
-  background: white;
+  width: 6px;
+  height: 6px;
+  background: hsl(215 20% 85%);
   border-radius: 50%;
   top: -10px;
-  opacity: 0.8;
+  opacity: 0.7;
   animation: snow linear infinite;
+}
+
+:global(.dark) .snowflake {
+  background: hsl(215 15% 60%);
 }
 
 /* Thunder animation */
@@ -247,71 +256,39 @@ onUnmounted(() => {
 }
 
 .lightning.flash {
-  background: rgba(255, 255, 255, 0.9);
-  box-shadow: 0 0 20px rgba(255, 255, 255, 0.8), 0 0 40px rgba(255, 255, 0, 0.6);
+  background: hsla(36 90% 75% / 0.8);
+  box-shadow: 0 0 30px hsla(36 90% 55% / 0.6), 0 0 60px hsla(36 90% 55% / 0.3);
 }
 
 /* Animations */
 @keyframes pulse {
-  0%,
-  100% {
-    transform: scale(1);
-    opacity: 1;
-  }
-  50% {
-    transform: scale(1.05);
-    opacity: 0.9;
-  }
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.03); opacity: 0.85; }
 }
 
 @keyframes rotate {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
 }
 
 @keyframes float {
-  0% {
-    transform: translateX(-100%);
-  }
-  100% {
-    transform: translateX(100vw);
-  }
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100vw); }
 }
 
 @keyframes rain {
-  0% {
-    transform: translateY(0);
-  }
-  100% {
-    transform: translateY(calc(100vh + 20px));
-  }
+  0% { transform: translateY(0); }
+  100% { transform: translateY(calc(100vh + 20px)); }
 }
 
 @keyframes snow {
-  0% {
-    transform: translateY(0) rotate(0deg);
-  }
-  100% {
-    transform: translateY(calc(100vh + 10px)) rotate(360deg);
-  }
+  0% { transform: translateY(0) rotate(0deg); }
+  100% { transform: translateY(calc(100vh + 10px)) rotate(360deg); }
 }
 
 @keyframes floatWithFade {
-  0% {
-    transform: translateX(-100%);
-    opacity: 0;
-  }
-  2.5% {
-    /* 0.5s in a 20s animation = 2.5% */
-    opacity: 1;
-  }
-  100% {
-    transform: translateX(100vw);
-    opacity: 1;
-  }
+  0% { transform: translateX(-100%); opacity: 0; }
+  2.5% { opacity: 0.8; }
+  100% { transform: translateX(100vw); opacity: 0.8; }
 }
 </style>

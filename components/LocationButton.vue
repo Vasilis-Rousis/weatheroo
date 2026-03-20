@@ -69,25 +69,26 @@ const handleClick = () => {
 <template>
   <div :class="cn('inline-flex items-center', props.class)">
     <Button
-      variant="outline"
+      variant="ghost"
       size="icon"
       :disabled="isLoading"
+      class="w-9 h-9 rounded-xl hover:bg-secondary/80"
       :class="
         isEnabled
-          ? 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800'
+          ? 'bg-emerald-50 dark:bg-emerald-900/15 text-emerald-600 dark:text-emerald-400'
           : ''
       "
       @click="handleClick"
     >
       <div
         v-if="isLoading"
-        class="animate-spin h-4 w-4 border-2 border-current border-t-transparent rounded-full"
+        class="animate-spin h-3.5 w-3.5 border-2 border-current border-t-transparent rounded-full"
       />
       <MapPinIcon
         v-else-if="isEnabled"
-        class="h-5 w-5 text-green-600 dark:text-green-400"
+        class="h-4 w-4"
       />
-      <MapPinOffIcon v-else class="h-5 w-5" />
+      <MapPinOffIcon v-else class="h-4 w-4" />
     </Button>
   </div>
 </template>

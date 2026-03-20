@@ -11,10 +11,16 @@ export default {
   ],
   theme: {
     extend: {
+      fontFamily: {
+        sans: ['"DM Sans"', "system-ui", "sans-serif"],
+        display: ['"Bricolage Grotesque"', '"DM Sans"', "system-ui", "sans-serif"],
+      },
       borderRadius: {
         lg: "var(--radius)",
         md: "calc(var(--radius) - 2px)",
         sm: "calc(var(--radius) - 4px)",
+        xl: "calc(var(--radius) + 4px)",
+        "2xl": "calc(var(--radius) + 8px)",
       },
       colors: {
         background: "hsl(var(--background))",
@@ -61,16 +67,26 @@ export default {
       animation: {
         fadeIn: "fadeIn 0.5s ease-out forwards",
         fadeOut: "fadeOut 0.5s ease-out forwards",
+        "slide-up": "slideUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards",
       },
       keyframes: {
         fadeIn: {
-          "0%": { opacity: "0", transform: "translateY(20px)" },
+          "0%": { opacity: "0", transform: "translateY(12px)" },
           "100%": { opacity: "1", transform: "translateY(0)" },
         },
         fadeOut: {
           "0%": { opacity: "1", transform: "translateY(0)" },
           "100%": { opacity: "0", transform: "translateY(-10px)" },
         },
+        slideUp: {
+          "0%": { opacity: "0", transform: "translateY(16px)" },
+          "100%": { opacity: "1", transform: "translateY(0)" },
+        },
+      },
+      boxShadow: {
+        glass: "0 4px 30px rgba(0, 0, 0, 0.06)",
+        "glass-lg": "0 8px 40px rgba(0, 0, 0, 0.08)",
+        "card-hover": "0 12px 48px rgba(0, 0, 0, 0.12)",
       },
     },
   },

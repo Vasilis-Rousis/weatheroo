@@ -1,20 +1,20 @@
 <!-- components/WeatherMap.vue -->
 <template>
   <div>
-    <Card class="border-none shadow-md overflow-hidden">
-      <CardHeader class="pb-6">
+    <div class="map-glass-card rounded-2xl overflow-hidden">
+      <div class="px-5 sm:px-6 pt-5 sm:pt-6 pb-4">
         <div
           class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3"
         >
-          <CardTitle class="text-lg">Interactive Weather Layers</CardTitle>
-          <div class="flex flex-wrap gap-2">
-            <!-- Layer Selection Buttons -->
+          <h3 class="text-sm font-display font-bold">Weather Layers</h3>
+          <div class="flex flex-wrap gap-1.5">
             <Button
               v-for="layer in availableLayers"
               :key="layer.key"
               :variant="activeLayer === layer.key ? 'default' : 'outline'"
               size="sm"
-              class="text-xs"
+              class="text-xs h-7 px-2.5 rounded-lg"
+              :class="activeLayer === layer.key ? 'bg-primary text-primary-foreground' : 'bg-secondary/60 border-border/50 hover:bg-secondary'"
               @click="setActiveLayer(layer.key)"
             >
               <component :is="layer.icon" class="h-3 w-3 mr-1" />
@@ -22,41 +22,40 @@
             </Button>
           </div>
         </div>
-      </CardHeader>
-      <CardContent class="p-0">
+      </div>
+      <div class="p-0">
         <div class="relative">
-          <!-- Map Container -->
           <div
             ref="mapContainer"
-            class="w-full map-container bg-gray-100 dark:bg-gray-800 relative z-0"
+            class="w-full map-container bg-secondary/50 relative z-0"
           />
 
           <!-- Loading Overlay -->
           <div
             v-if="isLoading"
-            class="absolute inset-0 bg-white/80 dark:bg-gray-900/80 flex items-center justify-center backdrop-blur-sm z-20"
+            class="absolute inset-0 bg-card/80 flex items-center justify-center backdrop-blur-sm z-20"
           >
-            <div class="flex items-center gap-2">
+            <div class="flex items-center gap-2 text-muted-foreground">
               <div
-                class="animate-spin h-5 w-5 border-2 border-blue-500 border-t-transparent rounded-full"
+                class="animate-spin h-4 w-4 border-2 border-primary border-t-transparent rounded-full"
               />
-              <span class="text-sm">Loading weather map...</span>
+              <span class="text-sm">Loading map...</span>
             </div>
           </div>
 
           <!-- Error State -->
           <div
             v-if="hasError"
-            class="absolute inset-0 bg-white/90 dark:bg-gray-900/90 flex items-center justify-center backdrop-blur-sm z-20"
+            class="absolute inset-0 bg-card/90 flex items-center justify-center backdrop-blur-sm z-20"
           >
             <div class="text-center p-4">
-              <div class="text-red-500 mb-2">
-                <AlertTriangleIcon class="h-8 w-8 mx-auto" />
+              <div class="inline-flex items-center justify-center w-10 h-10 rounded-xl bg-destructive/10 mb-3">
+                <AlertTriangleIcon class="h-5 w-5 text-destructive" />
               </div>
-              <p class="text-sm text-gray-600 dark:text-gray-400">
+              <p class="text-sm text-muted-foreground">
                 Unable to load weather map
               </p>
-              <Button size="sm" class="mt-2" @click="retryMap">
+              <Button size="sm" class="mt-3 rounded-lg text-xs" @click="retryMap">
                 Try Again
               </Button>
             </div>
@@ -65,54 +64,53 @@
           <!-- Legend -->
           <div
             v-if="showLegend && currentLayerInfo && !isLoading && !hasError"
-            class="absolute bottom-4 left-4 bg-white/95 dark:bg-gray-800/95 backdrop-blur-sm rounded-lg p-3 text-xs shadow-lg border border-gray-200 dark:border-gray-700 z-30 legend-container"
+            class="absolute bottom-4 left-4 bg-card/95 backdrop-blur-md rounded-xl p-3 text-xs shadow-glass border border-border/50 z-30 legend-container"
           >
-            <div class="font-semibold mb-2 text-gray-800 dark:text-gray-200">
+            <div class="font-semibold mb-2 text-sm">
               {{ currentLayerInfo.name }}
             </div>
-            <div class="flex items-center gap-1 mb-2">
+            <div class="flex items-center gap-0.5 mb-2">
               <div
                 v-for="(color, index) in currentLayerInfo.legend"
                 :key="index"
-                class="w-4 h-3 border border-gray-300 dark:border-gray-600"
+                class="w-5 h-3 first:rounded-l last:rounded-r"
                 :style="{ backgroundColor: color }"
               />
             </div>
-            <div class="text-gray-600 dark:text-gray-400">
+            <div class="text-muted-foreground">
               {{ currentLayerInfo.description }}
             </div>
           </div>
 
           <!-- Controls -->
           <div
-            class="absolute top-4 right-4 flex flex-col gap-2 z-30 controls-container"
+            class="absolute top-4 right-4 flex flex-col gap-1.5 z-30 controls-container"
           >
             <Button
               variant="outline"
               size="icon"
-              class="bg-white/95 dark:bg-gray-800/95 backdrop-blur-sm shadow-lg border border-gray-200 dark:border-gray-700 control-button"
+              class="h-8 w-8 bg-card/95 backdrop-blur-md shadow-glass border-border/50 rounded-lg control-button"
               @click="toggleLegend"
             >
-              <InfoIcon class="h-4 w-4" />
+              <InfoIcon class="h-3.5 w-3.5" />
             </Button>
             <Button
               variant="outline"
               size="icon"
-              class="bg-white/95 dark:bg-gray-800/95 backdrop-blur-sm shadow-lg border border-gray-200 dark:border-gray-700 control-button"
+              class="h-8 w-8 bg-card/95 backdrop-blur-md shadow-glass border-border/50 rounded-lg control-button"
               @click="centerOnLocation"
             >
-              <LocateIcon class="h-4 w-4" />
+              <LocateIcon class="h-3.5 w-3.5" />
             </Button>
           </div>
         </div>
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   </div>
 </template>
 
 <script setup>
 import { ref, onMounted, onUnmounted, watch, nextTick, computed } from "vue";
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import {
   CloudRainIcon,
@@ -516,6 +514,19 @@ onUnmounted(() => {
 </script>
 
 <style>
+/* Glass card for map */
+.map-glass-card {
+  background: hsl(var(--glass-bg));
+  backdrop-filter: blur(16px) saturate(1.4);
+  -webkit-backdrop-filter: blur(16px) saturate(1.4);
+  border: 1px solid hsl(var(--glass-border));
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.04);
+}
+
+.dark .map-glass-card {
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.2);
+}
+
 /* Custom marker styles */
 .custom-marker {
   background: transparent !important;
@@ -524,155 +535,120 @@ onUnmounted(() => {
 
 /* Map container responsive heights */
 .map-container {
-  height: 16rem; /* 256px - mobile default */
+  height: 16rem;
 }
 
 @media (min-width: 640px) {
   .map-container {
-    height: 20rem; /* 320px - small screens and up */
+    height: 20rem;
   }
 }
 
 @media (min-width: 768px) {
   .map-container {
-    height: 24rem; /* 384px - medium screens and up */
+    height: 24rem;
   }
 }
 
 @media (min-width: 1024px) {
   .map-container {
-    height: 32rem; /* 448px - large screens and up */
+    height: 32rem;
   }
 }
 
-/* Performance optimizations for map container */
+/* Leaflet styling */
 .leaflet-container {
-  @apply rounded-b-lg;
+  @apply rounded-b-2xl;
   z-index: 1 !important;
-  /* Hardware acceleration for smoother scrolling */
   transform: translateZ(0);
   will-change: transform;
-  /* Optimize image rendering */
   image-rendering: optimizeSpeed;
   image-rendering: -webkit-optimize-contrast;
 }
 
-/* Optimize weather tile rendering */
 .weather-tiles {
-  /* Hardware acceleration for weather overlay */
   transform: translateZ(0);
   will-change: opacity;
 }
 
-/* Reduce expensive effects during map interactions */
-.leaflet-container.leaflet-drag-target {
-  /* Temporarily disable expensive effects during dragging */
-}
-
 .leaflet-container.leaflet-drag-target .absolute {
-  /* Reduce backdrop blur during drag for better performance */
   backdrop-filter: blur(2px) !important;
 }
 
-/* Leaflet controls styling for dark mode - optimized */
 .leaflet-control-zoom a {
-  @apply dark:bg-gray-800 dark:text-white dark:border-gray-600;
-  /* Hardware acceleration for controls */
+  @apply dark:bg-card dark:text-foreground dark:border-border;
   transform: translateZ(0);
+  border-radius: 0.5rem !important;
 }
 
 .leaflet-control-zoom a:hover {
-  @apply dark:bg-gray-700;
+  @apply dark:bg-secondary;
+}
+
+.leaflet-control-zoom {
+  border-radius: 0.75rem !important;
+  overflow: hidden;
+  border: 1px solid hsl(var(--border)) !important;
 }
 
 .leaflet-control-attribution {
-  @apply dark:bg-gray-800/90 dark:text-gray-300;
-  /* Optimize text rendering */
+  @apply dark:bg-card/90 dark:text-muted-foreground;
   text-rendering: optimizeSpeed;
+  font-size: 10px !important;
 }
 
-/* Ensure Leaflet's internal elements don't interfere */
 .leaflet-control-container {
   pointer-events: none;
 }
 
 .leaflet-control {
   pointer-events: auto;
-  /* Hardware acceleration for controls */
   transform: translateZ(0);
 }
 
-/* Custom popup styling */
 .leaflet-popup-content-wrapper {
-  @apply dark:bg-gray-800 dark:text-gray-200;
+  @apply dark:bg-card dark:text-foreground;
+  border-radius: 0.75rem !important;
 }
 
 .leaflet-popup-tip {
-  @apply dark:border-t-gray-800;
+  @apply dark:border-t-card;
 }
 
-/* Ensure our custom controls are always on top - optimized */
 .absolute.z-30 {
   z-index: 1000 !important;
-  /* Hardware acceleration for custom controls */
   transform: translateZ(0);
   will-change: transform;
 }
 
-/* Optimize legend and controls for performance */
 .absolute.z-30 button {
-  /* Reduce backdrop blur complexity */
-  backdrop-filter: blur(4px) !important;
-  /* Hardware acceleration */
+  backdrop-filter: blur(8px) !important;
   transform: translateZ(0);
   transition: transform 0.15s ease, box-shadow 0.15s ease;
 }
 
 .absolute.z-30 button:hover {
-  transform: translateZ(0) scale(1.02);
+  transform: translateZ(0) scale(1.04);
 }
 
-/* Optimize tile loading appearance */
 .leaflet-tile-container {
-  /* Smooth tile appearance */
   transform: translateZ(0);
 }
 
 .leaflet-tile {
-  /* Optimize individual tile rendering */
   image-rendering: auto;
   transform: translateZ(0);
 }
 
-/* Reduce motion for users who prefer it */
 @media (prefers-reduced-motion: reduce) {
-  .leaflet-container {
-    transition: none !important;
-  }
-
-  .control-button {
-    transition: none !important;
-  }
-
-  .control-button:hover {
-    transform: none !important;
-  }
+  .leaflet-container { transition: none !important; }
+  .control-button { transition: none !important; }
+  .control-button:hover { transform: none !important; }
 }
 
-/* Optimize for mobile touch interactions */
 @media (max-width: 768px) {
-  .leaflet-container {
-    /* Better touch response on mobile */
-    touch-action: pan-x pan-y;
-  }
-
-  /* Simpler effects on mobile for better performance */
-  .control-button {
-    backdrop-filter: blur(2px) !important;
-  }
-
-  .legend-container {
-    backdrop-filter: blur(2px) !important;
-  }
+  .leaflet-container { touch-action: pan-x pan-y; }
+  .control-button { backdrop-filter: blur(2px) !important; }
+  .legend-container { backdrop-filter: blur(2px) !important; }
 }
 </style>
